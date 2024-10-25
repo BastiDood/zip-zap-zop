@@ -2,3 +2,21 @@
 name = "zip-zap-zop"
 version = "0.1.0"
 edition = "2021"
+
+[dependencies]
+anyhow = "1.0.91"
+http-body-util = "0.1.2"
+hyper-util = { version = "0.1.9", features = ["server-graceful"] }
+tracing = "0.1.40"
+
+[dependencies.fastwebsockets]
+version = "0.8.0"
+features = ["upgrade"]
+
+[dependencies.hyper]
+version = "1.5"
+features = ["server", "http1"]
+
+[dependencies.tokio]
+version = "1.41"
+features = ["rt-multi-thread", "macros", "net", "time", "sync", "signal"]
