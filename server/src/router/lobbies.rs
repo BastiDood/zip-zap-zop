@@ -1,5 +1,10 @@
-#[tracing::instrument(skip(upgrade))]
-pub async fn run(upgrade: fastwebsockets::upgrade::UpgradeFut) -> anyhow::Result<()> {
-    let ws = upgrade.await?;
+use crate::game::LobbyManager;
+use arcstr::ArcStr;
+use std::sync::Mutex;
+use triomphe::Arc;
+
+#[tracing::instrument(skip(manager, upgrade))]
+pub async fn run(manager: Arc<Mutex<LobbyManager<ArcStr>>>, upgrade: fastwebsockets::upgrade::UpgradeFut) {
+    let ws = upgrade.await.unwrap();
     todo!()
 }

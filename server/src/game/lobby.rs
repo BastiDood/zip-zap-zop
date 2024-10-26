@@ -1,4 +1,6 @@
-#[derive(Debug, Clone, PartialEq, Eq)]
+use serde::Serialize;
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct LobbyCreated {
     /// Server-specific unique identifier for the lobby.
     pub id: u32,
@@ -8,13 +10,13 @@ pub struct LobbyCreated {
     pub name: arcstr::ArcStr,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct LobbyDissolved {
     /// Server-specific unique identifier for the dissolved lobby.
     pub id: u32,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct LobbyUpdated {
     /// Server-specific unique identifier for the updated lobby.
     pub id: u32,
@@ -22,7 +24,7 @@ pub struct LobbyUpdated {
     pub players: u32,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub enum LobbyEvent {
     Created(LobbyCreated),
     Dissolved(LobbyDissolved),

@@ -1,9 +1,11 @@
 mod game;
 mod router;
 
-use std::net::Ipv4Addr;
+use arcstr::ArcStr;
+use std::{net::Ipv4Addr, sync::Mutex};
 use tokio::net::TcpListener;
 use tracing::{error, info_span, warn, Instrument};
+use triomphe::Arc;
 
 fn main() -> anyhow::Result<()> {
     let port = std::env::var("PORT")?.parse()?;
@@ -14,6 +16,7 @@ fn main() -> anyhow::Result<()> {
         let tcp = TcpListener::bind((Ipv4Addr::UNSPECIFIED, port)).await?;
 
         let http = hyper::server::conn::http1::Builder::new();
+        let manager = Arc::new(Mutex::new(game::LobbyManager::<ArcStr>::new(8)));
         loop {
             let conn = tokio::select! {
                 biased;
@@ -31,13 +34,17 @@ fn main() -> anyhow::Result<()> {
                 }
             };
 
-            let service = hyper::service::service_fn(move |req| async move {
-                let mut res = hyper::Response::default();
-                match router::route(req, &mut res) {
-                    Ok(()) => Ok(res),
-                    Err(err) => {
-                        error!(%err);
-                        Err(err)
+            let manager = manager.clone();
+            let service = hyper::service::service_fn(move |req| {
+                let manager = manager.clone();
+                async move {
+                    let mut res = hyper::Response::default();
+                    match router::route(manager, req, &mut res) {
+                        Ok(()) => Ok(res),
+                        Err(err) => {
+                            error!(%err);
+                            Err(err)
+                        }
                     }
                 }
             });

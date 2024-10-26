@@ -1,5 +1,5 @@
-mod lobby;
-mod player;
+pub mod lobby;
+pub mod player;
 
 #[cfg(test)]
 mod tests;
@@ -76,6 +76,10 @@ impl<P> LobbyManager<P> {
 
     pub fn subscribe(&self) -> broadcast::Receiver<LobbyEvent> {
         self.sender.subscribe()
+    }
+
+    pub fn player_count_of_lobby(&self, id: usize) -> Option<usize> {
+        Some(self.lobbies.get(id)?.player_count())
     }
 }
 
