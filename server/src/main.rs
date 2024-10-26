@@ -1,3 +1,4 @@
+mod game;
 mod router;
 
 use std::net::Ipv4Addr;
@@ -7,8 +8,7 @@ use tracing::{error, info_span, warn, Instrument};
 fn main() -> anyhow::Result<()> {
     let port = std::env::var("PORT")?.parse()?;
 
-    let mut new_multi_thread = tokio::runtime::Builder::new_multi_thread();
-    let runtime = new_multi_thread.enable_io().enable_time().build()?;
+    let runtime = tokio::runtime::Builder::new_multi_thread().enable_io().enable_time().build()?;
     let signal = runtime.block_on(async {
         let mut signal = core::pin::pin!(tokio::signal::ctrl_c());
         let tcp = TcpListener::bind((Ipv4Addr::UNSPECIFIED, port)).await?;
@@ -17,7 +17,9 @@ fn main() -> anyhow::Result<()> {
         loop {
             let conn = tokio::select! {
                 biased;
-                signal = &mut signal => break signal,
+                signal = &mut signal => {
+                    break signal;
+                }
                 conn = tcp.accept() => conn,
             };
 
@@ -41,8 +43,7 @@ fn main() -> anyhow::Result<()> {
             });
 
             let io = hyper_util::rt::TokioIo::new(stream);
-            let fut = http.serve_connection(io, service).instrument(info_span!("tcp", %addr));
-            runtime.spawn(fut);
+            runtime.spawn(http.serve_connection(io, service).instrument(info_span!("tcp", %addr)));
         }
     });
 
