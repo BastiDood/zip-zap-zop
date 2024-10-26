@@ -50,9 +50,7 @@ struct LobbyUpdated {
     /// Server-specific unique identifier for the updated lobby.
     id: u32,
     /// (Optional) new number of players.
-    players: Option<u32>,
-    /// (Optional) new lobby name.
-    name: Option<Box<str>>,
+    players: u32,
 }
 ```
 
