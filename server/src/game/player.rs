@@ -1,15 +1,15 @@
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PlayerJoined {
     pub id: u32,
     pub name: arcstr::ArcStr,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PlayerLeft {
     pub id: u32,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PlayerEvent {
     Joined(PlayerJoined),
     Left(PlayerLeft),

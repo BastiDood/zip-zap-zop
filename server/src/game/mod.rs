@@ -1,6 +1,9 @@
 mod lobby;
 mod player;
 
+#[cfg(test)]
+mod tests;
+
 pub use arcstr::ArcStr;
 pub use lobby::LobbyEvent;
 pub use player::PlayerEvent;
@@ -42,6 +45,8 @@ impl Lobby<ArcStr> {
     }
 
     #[instrument]
+    /// # Assumptions
+    /// The player's corresponding [`broadcast::Receiver`] must have already been dropped.
     fn remove_player(&mut self, id: usize) -> Option<bool> {
         drop(self.players.try_remove(id)?);
         Some(match self.sender.send(player::PlayerLeft { id: id.try_into().unwrap() }.into()) {
@@ -67,6 +72,10 @@ impl<P> LobbyManager<P> {
     pub fn new(capacity: usize) -> Self {
         let (sender, _) = broadcast::channel(capacity);
         Self { sender, lobbies: Slab::new() }
+    }
+
+    pub fn subscribe(&self) -> broadcast::Receiver<LobbyEvent> {
+        self.sender.subscribe()
     }
 }
 
@@ -119,6 +128,8 @@ impl LobbyManager<ArcStr> {
     }
 
     #[instrument]
+    /// # Assumptions
+    /// The player's corresponding [`broadcast::Receiver`] must have already been dropped.
     pub fn remove_player_from_lobby(&mut self, lobby_id: usize, player_id: usize) -> bool {
         let Some(lobby) = self.lobbies.get_mut(lobby_id) else {
             error!("lobby does not exist");
