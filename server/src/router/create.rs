@@ -1,14 +1,17 @@
 use crate::{
-    game::{Lobby, LobbyManager, PlayerEvent},
+    game::{player::PlayerReady, Lobby, LobbyManager, PlayerEvent},
     router::play::{play, send_fn},
 };
 use arcstr::ArcStr;
-use fastwebsockets::{FragmentCollectorRead, Frame, OpCode, WebSocketWrite};
+use core::{mem::replace, time::Duration};
+use fastwebsockets::{upgrade::UpgradeFut, FragmentCollectorRead, Frame, OpCode, WebSocketWrite};
 use serde::{Deserialize, Serialize};
+use slab::Slab;
 use std::sync::Mutex;
 use tokio::{
     io::{AsyncRead, AsyncWrite},
     sync::broadcast::{error::RecvError, Receiver},
+    time::timeout,
 };
 use tracing::{debug, error, info, instrument};
 use triomphe::Arc;
@@ -54,11 +57,15 @@ where
             tokio::select! {
                 biased;
                 event = rx.recv() => {
-                    event.inspect_err(|err| match err {
+                    let event = event.inspect_err(|err| match err {
                         RecvError::Closed => error!("player event channel closed"),
                         RecvError::Lagged(count) => error!(count, "player event channel lagged"),
                     })?;
-                    debug!("notified player of player event");
+                    ws_writer
+                        .write_frame(Frame::binary(rmp_serde::to_vec(&event)?.into()))
+                        .await
+                        .inspect_err(|err| error!(?err, "failed to relay player event to host"))?;
+                    debug!(?event, "notified player of player event");
                 }
                 frame = &mut signal => match frame.inspect_err(|err| error!(?err, "player disconnected from websocket"))? {
                     Frame { fin: true, opcode: OpCode::Binary, payload, .. } => break payload,
@@ -72,19 +79,19 @@ where
     let count = usize::try_from(count)?;
 
     let Some(expected) = manager.lock().unwrap().player_count_of_lobby(lid) else {
-        anyhow::bail!("lobby no longer exists");
+        anyhow::bail!("lobby {lid} no longer exists");
     };
 
     if count != expected {
         error!(count, expected, "host count mismatched with expected");
-        anyhow::bail!("host responded with mismatched player count");
+        anyhow::bail!("host responded with mismatched player count ({count} != {expected})");
     }
 
     Ok(())
 }
 
 #[instrument(skip(manager, upgrade))]
-pub async fn run(manager: Arc<Mutex<LobbyManager<ArcStr>>>, upgrade: fastwebsockets::upgrade::UpgradeFut) {
+pub async fn run(manager: Arc<Mutex<LobbyManager<ArcStr>>>, upgrade: UpgradeFut) {
     let (ws_reader, mut ws_writer) = upgrade.await.unwrap().split(tokio::io::split);
     let mut ws_reader = FragmentCollectorRead::new(ws_reader);
 
@@ -94,9 +101,9 @@ pub async fn run(manager: Arc<Mutex<LobbyManager<ArcStr>>>, upgrade: fastwebsock
     };
 
     let CreateLobby { player, name } = rmp_serde::from_slice(&payload).unwrap();
-    let (lid, pid, mut rx) = manager.lock().unwrap().init_lobby(16, name, player);
+    let (lid, pid, mut receiver) = manager.lock().unwrap().init_lobby(16, name, player);
 
-    let result = wait_for_game_start(&manager, &mut ws_reader, &mut ws_writer, &mut rx, lid).await;
+    let result = wait_for_game_start(&manager, &mut ws_reader, &mut ws_writer, &mut receiver, lid).await;
     let Some(Lobby { sender, name, players }) = manager.lock().unwrap().dissolve_lobby(lid) else {
         error!(lid, "lobby has already been dissolved unexpectedly");
         return;
@@ -104,15 +111,50 @@ pub async fn run(manager: Arc<Mutex<LobbyManager<ArcStr>>>, upgrade: fastwebsock
 
     info!(id = lid, name = name.as_str(), ?players, "lobby committed");
     drop(name);
-    drop(players);
 
     if let Err(err) = result {
         error!(%err);
         return;
     }
 
-    if let Err(err) = play(&mut ws_reader, &mut ws_writer, &mut rx, pid).await {
-        error!(%err);
-        return;
+    let mut rx = sender.subscribe();
+    tokio::spawn(async move {
+        if let Err(err) = play(&mut ws_reader, &mut ws_writer, &sender, &mut receiver, pid).await {
+            error!(%err);
+            return;
+        }
+    });
+
+    // TODO: Notify everyone in the lobby that the game is about to start.
+
+    // Wait for all players to announce ready state
+    let mut players: Slab<_> = players.into_iter().map(|(pid, _)| (pid, false)).collect();
+    let ready = async {
+        let mut count = 0;
+        while count < players.len() {
+            if let PlayerEvent::Ready(PlayerReady { id }) = rx.recv().await? {
+                let id = id.try_into()?;
+                let Some(flag) = players.get_mut(id) else {
+                    error!(id, "unknown player is ready");
+                    anyhow::bail!("unknown player {id}");
+                };
+                if replace(flag, true) {
+                    error!(id, "duplicate acknowledgement from player");
+                    anyhow::bail!("duplicate acknowledgement from player {id}");
+                }
+                count += 1;
+            }
+        }
+        anyhow::Ok(())
+    };
+
+    match timeout(Duration::from_secs(10), ready).await {
+        Ok(result) => result.expect("game protocol violated"),
+        Err(err) => {
+            error!(%err);
+            return;
+        }
     }
+
+    todo!("zip zap zop cycle")
 }

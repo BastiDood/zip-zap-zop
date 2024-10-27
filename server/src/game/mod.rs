@@ -9,12 +9,12 @@ pub use lobby::LobbyEvent;
 pub use player::PlayerEvent;
 
 use slab::Slab;
-use tokio::sync::broadcast;
+use tokio::sync::broadcast::{self, Receiver, Sender};
 use tracing::{debug, error, instrument, warn};
 
 #[derive(Debug)]
 pub struct Lobby<P> {
-    pub sender: broadcast::Sender<PlayerEvent>,
+    pub sender: Sender<PlayerEvent>,
     pub name: ArcStr,
     pub players: Slab<P>,
 }
@@ -38,7 +38,7 @@ impl Lobby<ArcStr> {
     }
 
     #[instrument]
-    fn add_player_with_subscription(&mut self, name: ArcStr) -> (usize, broadcast::Receiver<PlayerEvent>) {
+    fn add_player_with_subscription(&mut self, name: ArcStr) -> (usize, Receiver<PlayerEvent>) {
         let receiver = self.sender.subscribe();
         let id = self.add_player(name);
         (id, receiver)
@@ -64,7 +64,7 @@ impl Lobby<ArcStr> {
 
 #[derive(Debug)]
 pub struct LobbyManager<P> {
-    sender: broadcast::Sender<LobbyEvent>,
+    sender: Sender<LobbyEvent>,
     lobbies: Slab<Lobby<P>>,
 }
 
@@ -74,7 +74,7 @@ impl<P> LobbyManager<P> {
         Self { sender, lobbies: Slab::new() }
     }
 
-    pub fn subscribe(&self) -> broadcast::Receiver<LobbyEvent> {
+    pub fn subscribe(&self) -> Receiver<LobbyEvent> {
         self.sender.subscribe()
     }
 

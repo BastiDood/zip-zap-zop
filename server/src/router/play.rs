@@ -2,7 +2,7 @@ use crate::game::PlayerEvent;
 use fastwebsockets::{FragmentCollectorRead, Frame, OpCode, Payload, WebSocketWrite};
 use tokio::{
     io::{AsyncRead, AsyncWrite},
-    sync::broadcast::Receiver,
+    sync::broadcast::{Receiver, Sender},
 };
 use tracing::{error, info, instrument};
 
@@ -10,10 +10,11 @@ pub async fn send_fn<T>(_: T) -> Result<(), &'static str> {
     Err("unexpected obligated write")
 }
 
-#[instrument(skip(ws_reader, ws_writer, rx))]
+#[instrument(skip(ws_reader, ws_writer, tx, rx))]
 pub async fn play<Reader, Writer>(
     ws_reader: &mut FragmentCollectorRead<Reader>,
     ws_writer: &mut WebSocketWrite<Writer>,
+    tx: &Sender<PlayerEvent>,
     rx: &mut Receiver<PlayerEvent>,
     pid: usize,
 ) -> anyhow::Result<()>

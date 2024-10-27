@@ -25,6 +25,7 @@ pub struct LobbyUpdated {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(tag = "type")]
 pub enum LobbyEvent {
     Created(LobbyCreated),
     Dissolved(LobbyDissolved),
