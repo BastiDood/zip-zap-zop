@@ -98,7 +98,7 @@ fn one_player_joins_then_leaves_lobby() {
 #[test]
 fn dissolve_nonexistent_lobby() {
     let mut manager = LobbyManager::<()>::new(1);
-    assert!(!manager.dissolve_lobby(0));
+    assert!(manager.dissolve_lobby(0).is_none());
 }
 
 #[test]
@@ -170,7 +170,7 @@ fn premature_lobby_dissolution() {
     assert_eq!(lobby_event, lobby::LobbyUpdated { id: lid.try_into().unwrap(), players: 2 }.into());
     assert!(lobby_rx.is_empty());
 
-    assert!(manager.dissolve_lobby(lid));
+    assert!(manager.dissolve_lobby(lid).is_some());
 
     assert_eq!(host_rx.blocking_recv().unwrap_err(), RecvError::Closed);
     assert_eq!(player_rx.blocking_recv().unwrap_err(), RecvError::Closed);

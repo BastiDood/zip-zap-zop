@@ -1,6 +1,7 @@
 mod create;
 mod join;
 mod lobbies;
+mod play;
 
 use crate::game::LobbyManager;
 use arcstr::ArcStr;
@@ -11,7 +12,6 @@ use hyper::{
     Method, Request, Response, StatusCode,
 };
 use std::sync::Mutex;
-use tracing::error;
 use triomphe::Arc;
 
 pub fn route(

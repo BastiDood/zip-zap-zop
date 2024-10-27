@@ -14,9 +14,9 @@ use tracing::{debug, error, instrument, warn};
 
 #[derive(Debug)]
 pub struct Lobby<P> {
-    sender: broadcast::Sender<PlayerEvent>,
-    name: ArcStr,
-    players: Slab<P>,
+    pub sender: broadcast::Sender<PlayerEvent>,
+    pub name: ArcStr,
+    pub players: Slab<P>,
 }
 
 impl<P> Lobby<P> {
@@ -85,18 +85,13 @@ impl<P> LobbyManager<P> {
 
 impl<P: core::fmt::Debug> LobbyManager<P> {
     #[instrument]
-    pub fn dissolve_lobby(&mut self, id: usize) -> bool {
-        let Some(lobby) = self.lobbies.try_remove(id) else {
-            return false;
-        };
-
-        drop(lobby);
+    pub fn dissolve_lobby(&mut self, id: usize) -> Option<Lobby<P>> {
+        let lobby = self.lobbies.try_remove(id)?;
         match self.sender.send(lobby::LobbyDissolved { id: id.try_into().unwrap() }.into()) {
             Ok(count) => debug!(count, "notified game listeners of dissolved lobby"),
             Err(_) => warn!("no game listeners for dissolved lobby"),
         }
-
-        true
+        Some(lobby)
     }
 }
 
@@ -154,7 +149,7 @@ impl LobbyManager<ArcStr> {
         }
 
         if !is_valid {
-            assert!(self.dissolve_lobby(lobby_id));
+            assert!(self.dissolve_lobby(lobby_id).is_some());
         }
 
         true
