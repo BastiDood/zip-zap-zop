@@ -160,17 +160,7 @@ struct StartGame {
 }
 ```
 
-The server then sends each player a random UUID that must be echoed back.
-
-```rust
-struct GameStarted {
-    uuid: Box<str>,
-}
-```
-
-If one of the players do not respond in time, the game is aborted. The server immediately closes the connection.
-
-Otherwise, the game proceeds as in the ["Game Management"](#game-management) section.
+The server then sends each player an empty WebSocket frame. If one of the players do not respond with another empty WebSocket frame in time, the game is aborted. The server immediately closes the connection. Otherwise, the game proceeds as in the ["Game Management"](#game-management) section.
 
 ### Game Management
 
