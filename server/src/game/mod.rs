@@ -70,7 +70,7 @@ pub struct LobbyManager<P> {
 
 impl<P> LobbyManager<P> {
     pub fn new(capacity: usize) -> Self {
-        let (sender, _) = broadcast::channel(capacity);
+        let sender = Sender::new(capacity);
         Self { sender, lobbies: Slab::new() }
     }
 
@@ -102,7 +102,7 @@ impl LobbyManager<ArcStr> {
         capacity: usize,
         lobby_name: ArcStr,
         player_name: ArcStr,
-    ) -> (usize, usize, broadcast::Receiver<PlayerEvent>) {
+    ) -> (usize, usize, Receiver<PlayerEvent>) {
         let (sender, receiver) = broadcast::channel(capacity);
         let mut lobby = Lobby { sender, name: lobby_name.clone(), players: Slab::new() };
         let player_id = lobby.add_player(player_name);
