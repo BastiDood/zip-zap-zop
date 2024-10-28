@@ -68,7 +68,7 @@ fn one_player_joins_then_leaves_lobby() {
     assert!(lobby_rx.is_empty());
 
     assert!(lobby_rx.is_empty());
-    let (player_pid, mut player_rx) = manager.join_player_into_lobby(lid, arcstr::literal!("Other")).unwrap();
+    let (player_pid, _, mut player_rx, _) = manager.join_player_into_lobby(lid, arcstr::literal!("Other")).unwrap();
     assert_ne!(host_pid, player_pid);
 
     let player_event =
@@ -154,7 +154,7 @@ fn premature_lobby_dissolution() {
     assert!(lobby_rx.is_empty());
 
     assert!(lobby_rx.is_empty());
-    let (player_pid, mut player_rx) = manager.join_player_into_lobby(lid, arcstr::literal!("Other")).unwrap();
+    let (player_pid, _, mut player_rx, _) = manager.join_player_into_lobby(lid, arcstr::literal!("Other")).unwrap();
     assert_ne!(host_pid, player_pid);
 
     let player_event =

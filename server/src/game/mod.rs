@@ -39,10 +39,15 @@ impl Lobby<ArcStr> {
     }
 
     #[instrument]
-    fn add_player_with_subscription(&mut self, name: ArcStr) -> (usize, broadcast::Receiver<PlayerEvent>) {
-        let receiver = self.sender.subscribe();
+    fn add_player_with_subscription(
+        &mut self,
+        name: ArcStr,
+    ) -> (usize, broadcast::Sender<PlayerEvent>, broadcast::Receiver<PlayerEvent>, watch::Receiver<bool>) {
+        let broadcast_tx = self.sender.clone();
+        let broadcast_rx = broadcast_tx.subscribe();
+        let watch_rx = self.watcher.subscribe();
         let id = self.add_player(name);
-        (id, receiver)
+        (id, broadcast_tx, broadcast_rx, watch_rx)
     }
 
     #[instrument]
@@ -162,7 +167,7 @@ impl LobbyManager<ArcStr> {
         &mut self,
         lobby_id: usize,
         player_name: ArcStr,
-    ) -> Option<(usize, broadcast::Receiver<PlayerEvent>)> {
+    ) -> Option<(usize, broadcast::Sender<PlayerEvent>, broadcast::Receiver<PlayerEvent>, watch::Receiver<bool>)> {
         let Some(lobby) = self.lobbies.get_mut(lobby_id) else {
             error!("lobby does not exist");
             return None;

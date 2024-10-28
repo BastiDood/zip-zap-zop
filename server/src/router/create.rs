@@ -1,18 +1,13 @@
 use crate::{
-    game::{player::PlayerLeft, Lobby, LobbyManager, PlayerEvent},
-    router::play::{play, send_fn},
+    game::{Lobby, LobbyManager},
+    router::play::{play, relay_events_to_websocket, send_fn},
 };
 use arcstr::ArcStr;
-use core::time::Duration;
-use fastwebsockets::{upgrade::UpgradeFut, FragmentCollectorRead, Frame, OpCode, WebSocketWrite};
+use fastwebsockets::{upgrade::UpgradeFut, FragmentCollectorRead, Frame, OpCode};
 use serde::{Deserialize, Serialize};
-use std::sync::Mutex;
-use tokio::{
-    io::{AsyncRead, AsyncWrite},
-    sync::broadcast::{error::RecvError, Receiver},
-    time::timeout,
-};
-use tracing::{debug, error, info, instrument};
+use std::sync::Mutex as StdMutex;
+use tokio::{io::AsyncRead, sync::Mutex as TokioMutex};
+use tracing::{error, error_span, info, instrument};
 use triomphe::Arc;
 
 #[derive(Deserialize)]
@@ -31,47 +26,17 @@ struct StartGame {
     count: u32,
 }
 
-#[instrument(skip(manager, ws_reader, ws_writer, rx))]
-async fn wait_for_start_command<Reader, Writer>(
-    manager: &Mutex<LobbyManager<ArcStr>>,
+#[instrument(skip(manager, ws_reader))]
+async fn wait_for_start_command<Reader>(
+    manager: &StdMutex<LobbyManager<ArcStr>>,
     ws_reader: &mut FragmentCollectorRead<Reader>,
-    ws_writer: &mut WebSocketWrite<Writer>,
-    rx: &mut Receiver<PlayerEvent>,
     lid: usize,
 ) -> anyhow::Result<()>
 where
     Reader: AsyncRead + Unpin,
-    Writer: AsyncWrite + Unpin,
 {
-    ws_writer
-        .write_frame(Frame::binary(rmp_serde::to_vec(&LobbyCreated { id: lid.try_into()? })?.into()))
-        .await
-        .inspect_err(|err| error!(?err, "player disconnected when sending lobby creation notification"))?;
-    debug!("notified player of newly created lobby");
-
-    let payload = {
-        let func = &mut send_fn;
-        let mut signal = core::pin::pin!(ws_reader.read_frame(func));
-        loop {
-            tokio::select! {
-                biased;
-                event = rx.recv() => {
-                    let event = event.inspect_err(|err| match err {
-                        RecvError::Closed => error!("player event channel closed"),
-                        RecvError::Lagged(count) => error!(count, "player event channel lagged"),
-                    })?;
-                    ws_writer
-                        .write_frame(Frame::binary(rmp_serde::to_vec(&event)?.into()))
-                        .await
-                        .inspect_err(|err| error!(?err, "failed to relay player event to host"))?;
-                    debug!(?event, "notified player of player event");
-                }
-                frame = &mut signal => match frame.inspect_err(|err| error!(?err, "player disconnected from websocket"))? {
-                    Frame { fin: true, opcode: OpCode::Binary, payload, .. } => break payload,
-                    _ => anyhow::bail!("unexpected frame format"),
-                }
-            }
-        }
+    let Frame { fin: true, opcode: OpCode::Binary, payload, .. } = ws_reader.read_frame(&mut send_fn).await? else {
+        anyhow::bail!("unexpected frame format");
     };
 
     let StartGame { count } = rmp_serde::from_slice(&payload)?;
@@ -90,7 +55,7 @@ where
 }
 
 #[instrument(skip(manager, upgrade))]
-pub async fn run(manager: Arc<Mutex<LobbyManager<ArcStr>>>, upgrade: UpgradeFut) {
+pub async fn run(manager: &StdMutex<LobbyManager<ArcStr>>, upgrade: UpgradeFut) {
     let (ws_reader, mut ws_writer) = upgrade.await.unwrap().split(tokio::io::split);
     let mut ws_reader = FragmentCollectorRead::new(ws_reader);
 
@@ -100,47 +65,60 @@ pub async fn run(manager: Arc<Mutex<LobbyManager<ArcStr>>>, upgrade: UpgradeFut)
     };
 
     let CreateLobby { player, name } = rmp_serde::from_slice(&payload).unwrap();
-    let (lid, pid, mut event_rx, ready_rx) = manager.lock().unwrap().init_lobby(16, name, player);
+    let (lid, pid, event_rx, ready_rx) = manager.lock().unwrap().init_lobby(16, name, player);
 
-    let result = wait_for_start_command(&manager, &mut ws_reader, &mut ws_writer, &mut event_rx, lid).await;
-    let Some(Lobby { sender, watcher, name, players }) = manager.lock().unwrap().dissolve_lobby(lid) else {
-        error!(lid, "lobby has already been dissolved unexpectedly");
-        return;
-    };
-
-    info!(id = lid, name = name.as_str(), ?players, "lobby committed");
-    drop(name);
-
-    // Notify everyone that the game is about to start
-    assert!(!watcher.send_replace(true), "ready flag was modified by non-host");
-
-    if let Err(err) = result {
+    if let Err(err) = ws_writer
+        .write_frame(Frame::binary(rmp_serde::to_vec(&LobbyCreated { id: lid.try_into().unwrap() }).unwrap().into()))
+        .await
+    {
         error!(%err);
-        match sender.send(PlayerEvent::Left(PlayerLeft { id: pid.try_into().unwrap() })) {
-            Ok(count) => debug!(count, "host failed to issue start command to players"),
-            Err(_) => debug!("host failed but is the only player remaining"),
-        }
+        let Lobby { name, players, .. } =
+            manager.lock().unwrap().dissolve_lobby(lid).expect("lobby had just been created");
+        info!(lid, %name, ?players, "lobby has been prematurely dissolved");
         return;
     }
 
-    tokio::spawn(async move {
-        // TODO: This can be more efficient if the host skips the ready check altogether.
-        if let Err(err) = play(&mut ws_reader, &mut ws_writer, &sender, &mut event_rx, ready_rx, pid).await {
+    let ws_writer = Arc::new(TokioMutex::new(ws_writer));
+    let bg_relay = tokio::spawn(relay_events_to_websocket(event_rx, ws_writer.clone()));
+
+    let result = wait_for_start_command(manager, &mut ws_reader, lid).await;
+    let Lobby { sender, watcher, name, players } =
+        manager.lock().unwrap().dissolve_lobby(lid).expect("lobby must exist within host task");
+    info!(lid, %name, ?players, "lobby has been dissolved");
+
+    'relay: {
+        if let Err(err) = result {
             error!(%err);
-            match sender.send(PlayerEvent::Left(PlayerLeft { id: pid.try_into().unwrap() })) {
-                Ok(count) => debug!(count, "player disconnected"),
-                Err(_) => unreachable!("host should always be listening"),
-            }
-            return;
+            break 'relay;
         }
-    });
 
-    // Wait for all players to acknowledge readiness
-    if let Err(err) = timeout(Duration::from_secs(10), watcher.closed()).await {
-        error!(%err);
-        return;
+        let bg_play = tokio::spawn(async move { play(&mut ws_reader, ws_writer, &sender, ready_rx, pid).await });
+
+        // Wait for all workers to be ready
+        assert!(!watcher.send_replace(true));
+        watcher.closed().await;
+        drop(watcher);
+
+        bg_play.abort();
+        if let Err(err) = bg_play.await {
+            error_span!("bg_play", %err).in_scope(|| {
+                if err.is_panic() {
+                    info!("relay panicked");
+                } else if err.is_cancelled() {
+                    info!("relay cancelled");
+                }
+            });
+        }
     }
-    drop(watcher);
 
-    todo!("zip zap zop cycle")
+    bg_relay.abort();
+    if let Err(err) = bg_relay.await {
+        error_span!("bg_relay", %err).in_scope(|| {
+            if err.is_panic() {
+                info!("relay panicked");
+            } else if err.is_cancelled() {
+                info!("relay cancelled");
+            }
+        });
+    }
 }

@@ -32,17 +32,17 @@ pub fn route(
     *res = match req.uri().path() {
         "/lobbies" => {
             let (response, upgrade) = upgrade::upgrade(req)?;
-            tokio::spawn(lobbies::run(manager, upgrade));
+            tokio::spawn(async move { lobbies::run(&manager, upgrade).await });
             response
         }
         "/create" => {
             let (response, upgrade) = upgrade::upgrade(req)?;
-            tokio::spawn(create::run(manager, upgrade));
+            tokio::spawn(async move { create::run(&manager, upgrade).await });
             response
         }
         "/join" => {
             let (response, upgrade) = upgrade::upgrade(req)?;
-            tokio::spawn(join::run(manager, upgrade));
+            tokio::spawn(async move { join::run(&manager, upgrade).await });
             response
         }
         _ => {
