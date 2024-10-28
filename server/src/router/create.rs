@@ -1,15 +1,11 @@
 use crate::{
-    game::{
-        player::{PlayerLeft, PlayerReady},
-        Lobby, LobbyManager, PlayerEvent,
-    },
+    game::{Lobby, LobbyManager, PlayerEvent},
     router::play::{play, send_fn},
 };
 use arcstr::ArcStr;
-use core::{mem::replace, time::Duration};
+use core::time::Duration;
 use fastwebsockets::{upgrade::UpgradeFut, FragmentCollectorRead, Frame, OpCode, WebSocketWrite};
 use serde::{Deserialize, Serialize};
-use slab::Slab;
 use std::sync::Mutex;
 use tokio::{
     io::{AsyncRead, AsyncWrite},
@@ -93,46 +89,6 @@ where
     Ok(())
 }
 
-#[instrument(skip(rx))]
-async fn wait_for_all_players(players: &mut Slab<bool>, rx: &mut Receiver<PlayerEvent>) -> anyhow::Result<()> {
-    let mut count = 0;
-    while count < players.len() {
-        let event = rx.recv().await.inspect_err(|err| match err {
-            RecvError::Closed => unreachable!("detached host always holds one sender"),
-            RecvError::Lagged(count) => error!(count, "lobby has too many messages"),
-        })?;
-        match event {
-            PlayerEvent::Joined(_) => unreachable!("lobby must have already been dissolved"),
-            PlayerEvent::Left(PlayerLeft { id }) => {
-                let id = id.try_into()?;
-                let Some(flag) = players.try_remove(id) else {
-                    error!(id, "non-existent player tried to leave the lobby");
-                    anyhow::bail!("non-existent player {id} tried to leave the lobby");
-                };
-                if flag {
-                    info!(id, "ready player has left the lobby");
-                    count -= 1; // undo the tracker
-                } else {
-                    info!(id, "pending player has left the lobby");
-                }
-            }
-            PlayerEvent::Ready(PlayerReady { id }) => {
-                let id = id.try_into()?;
-                let Some(flag) = players.get_mut(id) else {
-                    error!(id, "unknown player is ready");
-                    anyhow::bail!("unknown player {id}");
-                };
-                if replace(flag, true) {
-                    error!(id, "duplicate acknowledgement from player");
-                    anyhow::bail!("duplicate acknowledgement from player {id}");
-                }
-                count += 1;
-            }
-        };
-    }
-    anyhow::Ok(())
-}
-
 #[instrument(skip(manager, upgrade))]
 pub async fn run(manager: Arc<Mutex<LobbyManager<ArcStr>>>, upgrade: UpgradeFut) {
     let (ws_reader, mut ws_writer) = upgrade.await.unwrap().split(tokio::io::split);
@@ -144,7 +100,7 @@ pub async fn run(manager: Arc<Mutex<LobbyManager<ArcStr>>>, upgrade: UpgradeFut)
     };
 
     let CreateLobby { player, name } = rmp_serde::from_slice(&payload).unwrap();
-    let (lid, pid, mut event_rx, mut ready_rx) = manager.lock().unwrap().init_lobby(16, name, player);
+    let (lid, pid, mut event_rx, ready_rx) = manager.lock().unwrap().init_lobby(16, name, player);
 
     let result = wait_for_start_command(&manager, &mut ws_reader, &mut ws_writer, &mut event_rx, lid).await;
     let Some(Lobby { sender, watcher, name, players }) = manager.lock().unwrap().dissolve_lobby(lid) else {
@@ -160,29 +116,21 @@ pub async fn run(manager: Arc<Mutex<LobbyManager<ArcStr>>>, upgrade: UpgradeFut)
         return;
     }
 
-    let mut rx = sender.subscribe();
-    let tx = sender.clone(); // TODO: Notify players of round results.
     tokio::spawn(async move {
-        if let Err(err) = play(&mut ws_reader, &mut ws_writer, &sender, &mut event_rx, &mut ready_rx, pid).await {
+        // TODO: This can be more efficient if the host skips the ready check altogether.
+        if let Err(err) = play(&mut ws_reader, &mut ws_writer, &sender, &mut event_rx, ready_rx, pid).await {
             error!(%err);
             return;
         }
     });
 
-    // TODO: Notify everyone in the lobby that the game is about to start with a `tokio::sync::watch` channel.
-
-    // Wait for all players to announce ready state
-    let mut players: Slab<_> = players.into_iter().map(|(pid, _)| (pid, false)).collect();
-    match timeout(Duration::from_secs(10), wait_for_all_players(&mut players, &mut rx)).await {
-        Ok(result) => result.expect("game protocol violated"),
-        Err(err) => {
-            error!(%err);
-            return;
-        }
-    }
-
-    // Notify that all players are ready
+    // Notify everyone that the game is about to start
     assert!(!watcher.send_replace(true), "ready flag was modified by non-host");
+    if let Err(err) = timeout(Duration::from_secs(10), watcher.closed()).await {
+        error!(%err);
+        return;
+    }
+    drop(watcher);
 
     todo!("zip zap zop cycle")
 }
