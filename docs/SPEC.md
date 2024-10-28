@@ -105,7 +105,9 @@ struct PlayerLeft {
 A player can join an existing lobby by connecting to the `/join` WebSocket endpoint. The client must then immediately identify themselves to the lobby.
 
 ```rust
-struct CreateLobby {
+struct JoinLobby {
+    /// Unique identifier for the lobby.
+    lobby: u32,
     /// The username of the player.
     player: Box<str>,
 }
