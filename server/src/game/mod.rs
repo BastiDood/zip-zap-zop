@@ -9,12 +9,13 @@ pub use lobby::LobbyEvent;
 pub use player::PlayerEvent;
 
 use slab::Slab;
-use tokio::sync::broadcast::{self, Receiver, Sender};
+use tokio::sync::{broadcast, watch};
 use tracing::{debug, error, instrument, warn};
 
 #[derive(Debug)]
 pub struct Lobby<P> {
-    pub sender: Sender<PlayerEvent>,
+    pub sender: broadcast::Sender<PlayerEvent>,
+    pub watcher: watch::Sender<bool>,
     pub name: ArcStr,
     pub players: Slab<P>,
 }
@@ -38,7 +39,7 @@ impl Lobby<ArcStr> {
     }
 
     #[instrument]
-    fn add_player_with_subscription(&mut self, name: ArcStr) -> (usize, Receiver<PlayerEvent>) {
+    fn add_player_with_subscription(&mut self, name: ArcStr) -> (usize, broadcast::Receiver<PlayerEvent>) {
         let receiver = self.sender.subscribe();
         let id = self.add_player(name);
         (id, receiver)
@@ -64,17 +65,17 @@ impl Lobby<ArcStr> {
 
 #[derive(Debug)]
 pub struct LobbyManager<P> {
-    sender: Sender<LobbyEvent>,
+    sender: broadcast::Sender<LobbyEvent>,
     lobbies: Slab<Lobby<P>>,
 }
 
 impl<P> LobbyManager<P> {
     pub fn new(capacity: usize) -> Self {
-        let sender = Sender::new(capacity);
+        let sender = broadcast::Sender::new(capacity);
         Self { sender, lobbies: Slab::new() }
     }
 
-    pub fn subscribe(&self) -> Receiver<LobbyEvent> {
+    pub fn subscribe(&self) -> broadcast::Receiver<LobbyEvent> {
         self.sender.subscribe()
     }
 
@@ -102,9 +103,10 @@ impl LobbyManager<ArcStr> {
         capacity: usize,
         lobby_name: ArcStr,
         player_name: ArcStr,
-    ) -> (usize, usize, Receiver<PlayerEvent>) {
-        let (sender, receiver) = broadcast::channel(capacity);
-        let mut lobby = Lobby { sender, name: lobby_name.clone(), players: Slab::new() };
+    ) -> (usize, usize, broadcast::Receiver<PlayerEvent>, watch::Receiver<bool>) {
+        let (sender, broadcast_rx) = broadcast::channel(capacity);
+        let (watcher, watch_rx) = watch::channel(false);
+        let mut lobby = Lobby { sender, watcher, name: lobby_name.clone(), players: Slab::new() };
         let player_id = lobby.add_player(player_name);
 
         let entry = self.lobbies.vacant_entry();
@@ -123,7 +125,7 @@ impl LobbyManager<ArcStr> {
             Err(_) => warn!("no game listeners for new lobby"),
         }
 
-        (lobby_id, player_id, receiver)
+        (lobby_id, player_id, broadcast_rx, watch_rx)
     }
 
     #[instrument]

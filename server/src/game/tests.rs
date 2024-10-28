@@ -4,7 +4,7 @@ use super::{broadcast::error::RecvError, lobby, player, LobbyManager};
 fn new_lobby_without_listener_should_have_one_player() {
     let mut manager = LobbyManager::new(1);
 
-    let (lid, pid, mut host_rx) = manager.init_lobby(1, arcstr::literal!("Lobby"), arcstr::literal!("Player"));
+    let (lid, pid, mut host_rx, _) = manager.init_lobby(1, arcstr::literal!("Lobby"), arcstr::literal!("Player"));
     assert_eq!(lid, 0);
     assert_eq!(pid, 0);
 
@@ -21,7 +21,7 @@ fn new_lobby_with_listener_should_have_one_player() {
     let mut manager = LobbyManager::new(1);
     let mut lobby_rx = manager.subscribe();
 
-    let (lid, pid, mut host_rx) = manager.init_lobby(1, arcstr::literal!("Lobby"), arcstr::literal!("Player"));
+    let (lid, pid, mut host_rx, _) = manager.init_lobby(1, arcstr::literal!("Lobby"), arcstr::literal!("Player"));
     assert_eq!(lid, 0);
     assert_eq!(pid, 0);
 
@@ -51,7 +51,7 @@ fn one_player_joins_then_leaves_lobby() {
     let mut manager = LobbyManager::new(2);
     let mut lobby_rx = manager.subscribe();
 
-    let (lid, host_pid, mut host_rx) = manager.init_lobby(2, arcstr::literal!("Lobby"), arcstr::literal!("Host"));
+    let (lid, host_pid, mut host_rx, _) = manager.init_lobby(2, arcstr::literal!("Lobby"), arcstr::literal!("Host"));
 
     let host_event = host_rx.blocking_recv().unwrap();
     assert_eq!(
@@ -106,7 +106,7 @@ fn host_leaves_lobby() {
     let mut manager = LobbyManager::new(2);
     let mut lobby_rx = manager.subscribe();
 
-    let (lid, pid, mut host_rx) = manager.init_lobby(2, arcstr::literal!("Lobby"), arcstr::literal!("Host"));
+    let (lid, pid, mut host_rx, _) = manager.init_lobby(2, arcstr::literal!("Lobby"), arcstr::literal!("Host"));
 
     let host_event = host_rx.blocking_recv().unwrap();
     assert_eq!(host_event, player::PlayerJoined { id: pid.try_into().unwrap(), name: arcstr::literal!("Host") }.into());
@@ -137,7 +137,7 @@ fn premature_lobby_dissolution() {
     let mut manager = LobbyManager::new(2);
     let mut lobby_rx = manager.subscribe();
 
-    let (lid, host_pid, mut host_rx) = manager.init_lobby(2, arcstr::literal!("Lobby"), arcstr::literal!("Host"));
+    let (lid, host_pid, mut host_rx, _) = manager.init_lobby(2, arcstr::literal!("Lobby"), arcstr::literal!("Host"));
 
     let host_event = host_rx.blocking_recv().unwrap();
     assert_eq!(

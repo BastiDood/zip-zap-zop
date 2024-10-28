@@ -2,7 +2,7 @@ use crate::game::PlayerEvent;
 use fastwebsockets::{FragmentCollectorRead, Frame, OpCode, Payload, WebSocketWrite};
 use tokio::{
     io::{AsyncRead, AsyncWrite},
-    sync::broadcast::{Receiver, Sender},
+    sync::{broadcast, watch},
 };
 use tracing::{error, info, instrument};
 
@@ -10,12 +10,13 @@ pub async fn send_fn<T>(_: T) -> Result<(), &'static str> {
     Err("unexpected obligated write")
 }
 
-#[instrument(skip(ws_reader, ws_writer, tx, rx))]
+#[instrument(skip(ws_reader, ws_writer, event_tx, event_rx, ready_rx))]
 pub async fn play<Reader, Writer>(
     ws_reader: &mut FragmentCollectorRead<Reader>,
     ws_writer: &mut WebSocketWrite<Writer>,
-    tx: &Sender<PlayerEvent>,
-    rx: &mut Receiver<PlayerEvent>,
+    event_tx: &broadcast::Sender<PlayerEvent>,
+    event_rx: &mut broadcast::Receiver<PlayerEvent>,
+    ready_rx: &mut watch::Receiver<bool>,
     pid: usize,
 ) -> anyhow::Result<()>
 where
@@ -31,10 +32,12 @@ where
     let Frame { fin: true, opcode: OpCode::Binary, payload, .. } = ws_reader.read_frame(&mut send_fn).await? else {
         anyhow::bail!("unexpected frame format");
     };
-
     anyhow::ensure!(payload.is_empty(), "unexpected acknowledgement format");
 
-    // TODO: How do we communicate to the other players in the lobby that we've sent a command?
+    // TODO: Concurrently listen for player events.
+
+    // Wait for the host's signal that everyone is ready
+    drop(ready_rx.wait_for(Clone::clone).await.inspect_err(|err| error!(?err))?);
 
     todo!("implement game logic")
 }

@@ -144,10 +144,10 @@ pub async fn run(manager: Arc<Mutex<LobbyManager<ArcStr>>>, upgrade: UpgradeFut)
     };
 
     let CreateLobby { player, name } = rmp_serde::from_slice(&payload).unwrap();
-    let (lid, pid, mut receiver) = manager.lock().unwrap().init_lobby(16, name, player);
+    let (lid, pid, mut event_rx, mut ready_rx) = manager.lock().unwrap().init_lobby(16, name, player);
 
-    let result = wait_for_start_command(&manager, &mut ws_reader, &mut ws_writer, &mut receiver, lid).await;
-    let Some(Lobby { sender, name, players }) = manager.lock().unwrap().dissolve_lobby(lid) else {
+    let result = wait_for_start_command(&manager, &mut ws_reader, &mut ws_writer, &mut event_rx, lid).await;
+    let Some(Lobby { sender, watcher, name, players }) = manager.lock().unwrap().dissolve_lobby(lid) else {
         error!(lid, "lobby has already been dissolved unexpectedly");
         return;
     };
@@ -163,13 +163,13 @@ pub async fn run(manager: Arc<Mutex<LobbyManager<ArcStr>>>, upgrade: UpgradeFut)
     let mut rx = sender.subscribe();
     let tx = sender.clone(); // TODO: Notify players of round results.
     tokio::spawn(async move {
-        if let Err(err) = play(&mut ws_reader, &mut ws_writer, &sender, &mut receiver, pid).await {
+        if let Err(err) = play(&mut ws_reader, &mut ws_writer, &sender, &mut event_rx, &mut ready_rx, pid).await {
             error!(%err);
             return;
         }
     });
 
-    // TODO: Notify everyone in the lobby that the game is about to start.
+    // TODO: Notify everyone in the lobby that the game is about to start with a `tokio::sync::watch` channel.
 
     // Wait for all players to announce ready state
     let mut players: Slab<_> = players.into_iter().map(|(pid, _)| (pid, false)).collect();
@@ -180,6 +180,9 @@ pub async fn run(manager: Arc<Mutex<LobbyManager<ArcStr>>>, upgrade: UpgradeFut)
             return;
         }
     }
+
+    // Notify that all players are ready
+    assert!(!watcher.send_replace(true), "ready flag was modified by non-host");
 
     todo!("zip zap zop cycle")
 }
