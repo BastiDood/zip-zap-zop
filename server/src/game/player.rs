@@ -12,16 +12,10 @@ pub struct PlayerLeft {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct PlayerReady {
-    pub id: u32,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(tag = "type")]
 pub enum PlayerEvent {
     Joined(PlayerJoined),
     Left(PlayerLeft),
-    Ready(PlayerReady),
 }
 
 impl From<PlayerJoined> for PlayerEvent {
