@@ -1,5 +1,5 @@
 use crate::{
-    game::{Lobby, LobbyManager, PlayerEvent},
+    game::{player::PlayerLeft, Lobby, LobbyManager, PlayerEvent},
     router::play::{play, send_fn},
 };
 use arcstr::ArcStr;
@@ -111,8 +111,15 @@ pub async fn run(manager: Arc<Mutex<LobbyManager<ArcStr>>>, upgrade: UpgradeFut)
     info!(id = lid, name = name.as_str(), ?players, "lobby committed");
     drop(name);
 
+    // Notify everyone that the game is about to start
+    assert!(!watcher.send_replace(true), "ready flag was modified by non-host");
+
     if let Err(err) = result {
         error!(%err);
+        match sender.send(PlayerEvent::Left(PlayerLeft { id: pid.try_into().unwrap() })) {
+            Ok(count) => debug!(count, "host failed to issue start command to players"),
+            Err(_) => debug!("host failed but is the only player remaining"),
+        }
         return;
     }
 
@@ -120,12 +127,15 @@ pub async fn run(manager: Arc<Mutex<LobbyManager<ArcStr>>>, upgrade: UpgradeFut)
         // TODO: This can be more efficient if the host skips the ready check altogether.
         if let Err(err) = play(&mut ws_reader, &mut ws_writer, &sender, &mut event_rx, ready_rx, pid).await {
             error!(%err);
+            match sender.send(PlayerEvent::Left(PlayerLeft { id: pid.try_into().unwrap() })) {
+                Ok(count) => debug!(count, "player disconnected"),
+                Err(_) => unreachable!("host should always be listening"),
+            }
             return;
         }
     });
 
-    // Notify everyone that the game is about to start
-    assert!(!watcher.send_replace(true), "ready flag was modified by non-host");
+    // Wait for all players to acknowledge readiness
     if let Err(err) = timeout(Duration::from_secs(10), watcher.closed()).await {
         error!(%err);
         return;

@@ -23,6 +23,8 @@ where
     Reader: AsyncRead + Unpin,
     Writer: AsyncWrite + Unpin,
 {
+    // TODO: Concurrently listen for player events.
+
     // Wait for the host to be ready
     drop(ready_rx.wait_for(Clone::clone).await.inspect_err(|err| error!(?err))?);
 
