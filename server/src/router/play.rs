@@ -1,5 +1,6 @@
 use crate::game::PlayerEvent;
-use fastwebsockets::{FragmentCollectorRead, Frame, OpCode, Payload, WebSocketWrite};
+use fastwebsockets::{FragmentCollectorRead, Frame, OpCode, Payload, WebSocket, WebSocketWrite};
+use serde::Serialize;
 use tokio::{
     io::{AsyncRead, AsyncWrite},
     sync::{
@@ -15,10 +16,40 @@ pub async fn send_fn<T>(_: T) -> Result<(), &'static str> {
 }
 
 #[instrument(skip(event_rx, ws_writer))]
-pub async fn relay_events_to_websocket<Writer>(
-    mut event_rx: broadcast::Receiver<PlayerEvent>,
-    ws_writer: Arc<Mutex<WebSocketWrite<Writer>>>,
+pub async fn relay_events_to_websocket<Event, Io>(
+    mut event_rx: broadcast::Receiver<Event>,
+    ws_writer: &mut WebSocket<Io>,
 ) where
+    Event: Clone + Serialize,
+    Io: AsyncRead + AsyncWrite + Unpin,
+{
+    loop {
+        match event_rx.recv().await {
+            Ok(event) => {
+                // If sending panics, the host will eventually realize it cannot send to the writer.
+                let bytes = rmp_serde::to_vec(&event).unwrap().into();
+                ws_writer.write_frame(Frame::binary(bytes)).await.unwrap();
+            }
+            Err(err) => match err {
+                RecvError::Closed => {
+                    info!("events channel closed");
+                    break;
+                }
+                RecvError::Lagged(count) => {
+                    error!(count, "events channel lagged");
+                    unreachable!("events channel lagged by {count}");
+                }
+            },
+        }
+    }
+}
+
+#[instrument(skip(event_rx, ws_writer))]
+pub async fn relay_events_to_websocket_writer_with_lock<Event, Writer>(
+    mut event_rx: broadcast::Receiver<Event>,
+    ws_writer: &Mutex<WebSocketWrite<Writer>>,
+) where
+    Event: Clone + Serialize,
     Writer: AsyncWrite + Unpin,
 {
     loop {

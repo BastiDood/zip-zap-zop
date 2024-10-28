@@ -8,6 +8,7 @@ pub use arcstr::ArcStr;
 pub use lobby::LobbyEvent;
 pub use player::PlayerEvent;
 
+use core::fmt::Debug;
 use slab::Slab;
 use tokio::sync::{broadcast, watch};
 use tracing::{debug, error, instrument, warn};
@@ -84,12 +85,16 @@ impl<P> LobbyManager<P> {
         self.sender.subscribe()
     }
 
+    pub fn lobbies(&self) -> Slab<ArcStr> {
+        self.lobbies.iter().map(|(id, Lobby { name, .. })| (id, name.clone())).collect()
+    }
+
     pub fn player_count_of_lobby(&self, id: usize) -> Option<usize> {
         Some(self.lobbies.get(id)?.player_count())
     }
 }
 
-impl<P: core::fmt::Debug> LobbyManager<P> {
+impl<P: Debug> LobbyManager<P> {
     #[instrument]
     pub fn dissolve_lobby(&mut self, id: usize) -> Option<Lobby<P>> {
         let lobby = self.lobbies.try_remove(id)?;

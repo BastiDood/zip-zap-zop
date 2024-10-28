@@ -1,6 +1,6 @@
 use crate::{
     game::{Lobby, LobbyManager},
-    router::play::{play, relay_events_to_websocket, send_fn},
+    router::play::{play, relay_events_to_websocket_writer_with_lock, send_fn},
 };
 use arcstr::ArcStr;
 use fastwebsockets::{upgrade::UpgradeFut, FragmentCollectorRead, Frame, OpCode};
@@ -79,7 +79,10 @@ pub async fn run(manager: &StdMutex<LobbyManager<ArcStr>>, upgrade: UpgradeFut) 
     }
 
     let ws_writer = Arc::new(TokioMutex::new(ws_writer));
-    let bg_relay = tokio::spawn(relay_events_to_websocket(event_rx, ws_writer.clone()));
+    let bg_relay = tokio::spawn({
+        let ws_writer = ws_writer.clone();
+        async move { relay_events_to_websocket_writer_with_lock(event_rx, &ws_writer).await }
+    });
 
     let result = wait_for_start_command(manager, &mut ws_reader, lid).await;
     let Lobby { sender, watcher, name, players } =
