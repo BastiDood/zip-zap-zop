@@ -210,3 +210,37 @@ The next `Expect` message will be of the player who caused the elimination, but 
 #### End the Game
 
 The game ends when there is only one player left. At this point, the server closes the connection after the sending the final `PlayerEliminated` message. The client is expected to render this state properly.
+
+## Technical Details
+
+### Host
+
+1. Create the Lobby with a `broadcast` channel for lobby events.
+1. Dissolve the Lobby if any of these steps fail:
+   1. Host signals the `GameStart`.
+   1. Host detaches from the Lobby in Player mode.
+1. Lobby is removed from advertisement.
+1. `SYNC-1`: Lobby broadcasts to the Players (1) a new `mpsc` sender to which player actions will be sent and (2) a new `broadcast` receiver to which game events will be sent.
+1. Drop the lone broadcast sender of game events if the following game loop fails.
+   1. `SYNC-2`: Broadcast to all players the next expected message.
+   1. `SYNC-3`: Wait for a player to respond.
+      1. If a player incorrectly responds, notify everyone that this player has been eliminated.
+      1. If a player correctly responds, proceed.
+1. `SYNC-4`: Lobby reports that the game has concluded with a winner if there is only one player left.
+1. Lobby drops the lone broadcast sender.
+1. `SYNC-5`: Lobby drops the lone `mpsc` receiver.
+
+### Player
+
+1. Join the Lobby by subscribing to the `broadcast` channel for lobby events.
+1. Disconnect from the Lobby if any of these steps fail.
+   1. `SYNC-1`: Receive the new `mpsc` sender for player events and `broadcast` receiver for game events.
+   1. Ping the WebSocket for client readiness.
+   1. Wait for the client to respond back as ready.
+   1. Drop own handle of the old `broadcast` channel for lobby events.
+1. Gracefully eliminate self from the game if any of these steps fail.
+    1. `SYNC-2`: Receive the next expected message
+    1. `SYNC-3`: Relay the broadcasted game expectation.
+1. `SYNC-4`: Gracefully exit the game upon announcement of winner.
+1. Drop the `broadcast` receiver.
+1. `SYNC-5`: Wait for the `mpsc` sender to close.
