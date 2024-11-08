@@ -51,7 +51,7 @@ fn main() -> anyhow::Result<()> {
             });
 
             let io = hyper_util::rt::TokioIo::new(stream);
-            runtime.spawn(http.serve_connection(io, service).instrument(info_span!("tcp", %addr)));
+            runtime.spawn(http.serve_connection(io, service).with_upgrades().instrument(info_span!("tcp", %addr)));
         }
     });
 
