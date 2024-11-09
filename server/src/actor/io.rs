@@ -1,4 +1,7 @@
-use crate::event::player::{PlayerAction, PlayerResponded};
+use crate::{
+    actor::send_fn,
+    event::player::{PlayerAction, PlayerResponded},
+};
 use fastwebsockets::{FragmentCollectorRead, Frame, OpCode, Payload, WebSocketWrite};
 use tokio::{
     io::{AsyncRead, AsyncWrite},
@@ -10,10 +13,6 @@ use tokio::{
 use tracing::{error, info, instrument, warn};
 use triomphe::Arc;
 
-async fn send_fn<T>(_: T) -> Result<(), &'static str> {
-    Err("unexpected obligated write")
-}
-
 #[instrument(skip(event_tx, ws_reader))]
 pub async fn websocket_msgpack_to_event_actor<Reader>(
     event_tx: &Sender<PlayerResponded>,
@@ -24,7 +23,7 @@ pub async fn websocket_msgpack_to_event_actor<Reader>(
 {
     loop {
         let payload = match ws_reader.read_frame(&mut send_fn).await {
-            Ok(Frame { fin: false, opcode: OpCode::Binary, payload, .. }) => payload,
+            Ok(Frame { fin: true, opcode: OpCode::Binary, payload, .. }) => payload,
             Ok(Frame { fin, opcode, payload, .. }) => {
                 error!(fin, ?opcode, ?payload, "unexpected websocket frame received");
                 break;

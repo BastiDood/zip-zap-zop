@@ -23,19 +23,19 @@ impl GameExpects {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Clone, Copy, Serialize)]
 pub struct GameEliminates {
     /// The ID of the eliminated player.
     pub pid: usize,
 }
 
-#[derive(Serialize)]
+#[derive(Clone, Copy, Serialize)]
 pub struct GameConcludes {
     /// The player ID of the winner.
     pub pid: usize,
 }
 
-#[derive(Serialize)]
+#[derive(Clone, Copy, Serialize)]
 pub enum GameEvent {
     Expects(GameExpects),
     Eliminates(GameEliminates),

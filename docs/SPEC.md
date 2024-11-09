@@ -75,7 +75,9 @@ The server immediately responds with the newly created lobby ID.
 ```rust
 struct LobbyCreated {
     /// Unique identifier for the lobby.
-    id: u32,
+    lid: u32,
+    /// Unique identifier for the player.
+    pid: u32,
 }
 ```
 
