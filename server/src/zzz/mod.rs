@@ -6,6 +6,13 @@ use core::fmt::Debug;
 use slab::Slab;
 use tracing::{info, instrument, warn};
 
+pub enum GameWinnerError {
+    /// Occurs when the lobby has no players to begin with.
+    EmptyLobby,
+    /// Occurs when there are more players in the lobby to declare a winner.
+    MorePlayers,
+}
+
 #[derive(Debug)]
 pub struct ZipZapZop<Player> {
     players: Slab<Player>,
@@ -18,13 +25,23 @@ impl<Player> ZipZapZop<Player> {
     }
 
     /// The action for the next expected message.
-    pub const fn expects(&self) -> GameExpects {
-        self.expects
+    pub const fn expects(&self) -> &GameExpects {
+        &self.expects
     }
 
     /// The number of players currently in the game.
     pub fn len(&self) -> usize {
         self.players.len()
+    }
+
+    pub fn winner(&self) -> Result<(usize, &Player), GameWinnerError> {
+        let mut iter = self.players.iter();
+        let first = iter.next().ok_or(GameWinnerError::EmptyLobby)?;
+        if iter.next().is_none() {
+            Ok(first)
+        } else {
+            Err(GameWinnerError::MorePlayers)
+        }
     }
 }
 

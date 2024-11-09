@@ -1,6 +1,10 @@
+mod actor;
+/// One-to-many actor model.
+mod event;
+mod zzz;
+
 mod game;
 mod router;
-mod zzz;
 
 use arcstr::ArcStr;
 use std::{net::Ipv4Addr, sync::Mutex};
