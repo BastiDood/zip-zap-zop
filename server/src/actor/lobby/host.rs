@@ -2,13 +2,14 @@ use crate::{
     actor::{
         game::handle_game,
         io::{event_to_websocket_msgpack_actor, websocket_msgpack_to_event_actor},
-        lobby::{wait_for_lobby_start, Lobby, LobbyEvent, LobbyStart},
+        lobby::{wait_for_lobby_start, LobbyEvent, LobbyStart},
         send_fn,
     },
     event::{
         lobby::{CreateLobby, LobbyCreated, StartGame},
         player::PlayerResponds,
     },
+    router::lobby::{Lobby, LobbyManager},
     zzz::ZipZapZop,
 };
 use fastwebsockets::{upgrade::UpgradeFut, FragmentCollectorRead, Frame, OpCode, Payload, WebSocketWrite};
@@ -77,7 +78,7 @@ where
 }
 
 #[instrument(skip(lobbies, upgrade))]
-pub async fn host_actor(lobbies: &Mutex<Slab<Lobby>>, upgrade: UpgradeFut, broadcast_capacity: usize) {
+pub async fn host_actor(lobbies: &Mutex<LobbyManager>, upgrade: UpgradeFut, broadcast_capacity: usize) {
     let (ws_reader, ws_writer) = upgrade.await.unwrap().split(tokio::io::split);
     let mut ws_reader = FragmentCollectorRead::new(ws_reader);
 
@@ -89,7 +90,6 @@ pub async fn host_actor(lobbies: &Mutex<Slab<Lobby>>, upgrade: UpgradeFut, broad
         }
     };
 
-    // TODO: Register the lobby name.
     let CreateLobby { player, lobby } = rmp_serde::from_slice(&payload).unwrap();
     info!(%lobby, %player, "player requested the lobby creation");
 
@@ -97,10 +97,12 @@ pub async fn host_actor(lobbies: &Mutex<Slab<Lobby>>, upgrade: UpgradeFut, broad
     let mut players = Slab::with_capacity(1);
 
     let pid = players.insert(player);
-    let lid = lobbies.lock().unwrap().insert(Lobby { broadcast_tx, players });
+    let lid = lobbies.lock().unwrap().lobbies.insert(Lobby { broadcast_tx, players, lobby });
 
     let result = detach_host_while_waiting_for_start_command(&mut ws_reader, ws_writer, broadcast_rx, lid, pid).await;
-    let Lobby { broadcast_tx: start_tx, players } = lobbies.lock().unwrap().remove(lid);
+    let Lobby { broadcast_tx: start_tx, players, lobby } = lobbies.lock().unwrap().lobbies.remove(lid);
+    trace!(%lobby, "lobby removed by host");
+
     let (count, handle) = match result {
         Ok(count) => count,
         Err(err) => {

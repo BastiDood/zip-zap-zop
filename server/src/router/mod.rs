@@ -1,21 +1,18 @@
-mod create;
-mod join;
-mod lobbies;
-mod play;
+pub mod lobby;
 
-use crate::game::LobbyManager;
-use arcstr::ArcStr;
+use crate::actor::lobby::{guest::guest_actor, host::host_actor};
 use fastwebsockets::{upgrade, WebSocketError};
 use http_body_util::Empty;
 use hyper::{
     body::{Bytes, Incoming},
     Method, Request, Response, StatusCode,
 };
+use lobby::LobbyManager;
 use std::sync::Mutex;
 use triomphe::Arc;
 
 pub fn route(
-    manager: Arc<Mutex<LobbyManager<ArcStr>>>,
+    manager: Arc<Mutex<LobbyManager>>,
     req: Request<Incoming>,
     res: &mut Response<Empty<Bytes>>,
 ) -> Result<(), WebSocketError> {
@@ -30,19 +27,15 @@ pub fn route(
     }
 
     *res = match req.uri().path() {
-        "/lobbies" => {
-            let (response, upgrade) = upgrade::upgrade(req)?;
-            tokio::spawn(async move { lobbies::run(&manager, upgrade).await });
-            response
-        }
+        "/lobbies" => todo!(),
         "/create" => {
             let (response, upgrade) = upgrade::upgrade(req)?;
-            tokio::spawn(async move { create::run(&manager, upgrade).await });
+            tokio::spawn(async move { host_actor(&manager, upgrade, 32).await });
             response
         }
         "/join" => {
             let (response, upgrade) = upgrade::upgrade(req)?;
-            tokio::spawn(async move { join::run(&manager, upgrade).await });
+            tokio::spawn(async move { guest_actor(&manager, upgrade).await });
             response
         }
         _ => {

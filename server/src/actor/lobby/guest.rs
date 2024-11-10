@@ -1,13 +1,14 @@
 use crate::{
     actor::{
         io::{event_to_websocket_msgpack_actor, websocket_msgpack_to_event_actor},
-        lobby::{wait_for_lobby_start, Lobby, LobbyStart},
+        lobby::{wait_for_lobby_start, LobbyStart},
         send_fn,
     },
     event::{
         lobby::{JoinLobby, LobbyJoined, LobbyPlayerJoined, LobbyPlayerLeft, StartGame},
         player::{PlayerAction, PlayerResponds},
     },
+    router::lobby::{Lobby, LobbyManager},
 };
 use arcstr::ArcStr;
 use fastwebsockets::{
@@ -61,7 +62,7 @@ where
 
 // TODO: Refactor so that `lid` and `pid` are kept in instrumentation spans.
 #[instrument(skip(lobbies, upgrade))]
-pub async fn guest_actor(lobbies: &Mutex<Slab<Lobby>>, upgrade: UpgradeFut) {
+pub async fn guest_actor(lobbies: &Mutex<LobbyManager>, upgrade: UpgradeFut) {
     let (ws_reader, mut ws_writer) = upgrade.await.unwrap().split(tokio::io::split);
     let mut ws_reader = FragmentCollectorRead::new(ws_reader);
 
@@ -78,10 +79,12 @@ pub async fn guest_actor(lobbies: &Mutex<Slab<Lobby>>, upgrade: UpgradeFut) {
 
     let (mut broadcast_rx, pid, snapshot) = {
         let mut guard = lobbies.lock().unwrap();
-        let Some(Lobby { broadcast_tx, players }) = guard.get_mut(lid) else {
+        let Some(Lobby { broadcast_tx, players, lobby }) = guard.lobbies.get_mut(lid) else {
             error!(lid, "lobby does not exist");
             return;
         };
+
+        trace!(%lobby, "lobby found for guest");
 
         let clone = players.clone();
         let pid = players.insert(player.clone());
@@ -145,10 +148,10 @@ pub async fn guest_actor(lobbies: &Mutex<Slab<Lobby>>, upgrade: UpgradeFut) {
     // Gracefully disconnect player from the lobby with notification.
     {
         let mut guard = lobbies.lock().unwrap();
-        let Lobby { broadcast_tx, players } = guard.get_mut(lid).expect("lobby must still exist");
+        let Lobby { broadcast_tx, players, lobby } = guard.lobbies.get_mut(lid).expect("lobby must still exist");
 
         let player = players.remove(pid);
-        info!(%player, "player has prematurely left the lobby");
+        info!(%lobby, %player, "player has prematurely left the lobby");
 
         let count = broadcast_tx
             .send(LobbyPlayerLeft { pid }.into())

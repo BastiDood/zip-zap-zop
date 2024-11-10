@@ -1,12 +1,9 @@
 mod actor;
-/// One-to-many actor model.
 mod event;
+mod router;
 mod zzz;
 
-mod game;
-mod router;
-
-use arcstr::ArcStr;
+use router::lobby::LobbyManager;
 use std::{net::Ipv4Addr, sync::Mutex};
 use tokio::net::TcpListener;
 use tracing::{error, info_span, warn, Instrument};
@@ -21,7 +18,7 @@ fn main() -> anyhow::Result<()> {
         let tcp = TcpListener::bind((Ipv4Addr::UNSPECIFIED, port)).await?;
 
         let http = hyper::server::conn::http1::Builder::new();
-        let manager = Arc::new(Mutex::new(game::LobbyManager::<ArcStr>::new(8)));
+        let manager = Arc::<Mutex<LobbyManager>>::default();
         loop {
             let conn = tokio::select! {
                 biased;

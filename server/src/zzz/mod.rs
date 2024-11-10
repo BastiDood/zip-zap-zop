@@ -29,11 +29,6 @@ impl<Player> ZipZapZop<Player> {
         &self.expects
     }
 
-    /// The number of players currently in the game.
-    pub fn len(&self) -> usize {
-        self.players.len()
-    }
-
     pub fn winner(&self) -> Result<(usize, &Player), GameWinnerError> {
         let mut iter = self.players.iter();
         let first = iter.next().ok_or(GameWinnerError::EmptyLobby)?;

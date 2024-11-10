@@ -1,69 +1,10 @@
 pub mod guest;
 pub mod host;
 
-use crate::event::{
-    lobby::{LobbyPlayerJoined, LobbyPlayerLeft},
-    player::PlayerResponds,
-};
-use arcstr::ArcStr;
-use core::convert::Infallible;
+use crate::router::lobby::{LobbyEvent, LobbyStart};
 use fastwebsockets::{Frame, Payload, WebSocketError, WebSocketWrite};
-use slab::Slab;
-use tokio::{
-    io::AsyncWrite,
-    sync::{broadcast, mpsc},
-};
+use tokio::{io::AsyncWrite, sync::broadcast};
 use tracing::{error, info};
-use triomphe::Arc;
-
-#[derive(Debug)]
-struct LobbyStart {
-    ready_tx: mpsc::Sender<Infallible>,
-    event_tx: mpsc::Sender<PlayerResponds>,
-    broadcast_rx: broadcast::Receiver<Arc<[u8]>>,
-    /// Number of known players in the game.
-    count: usize,
-}
-
-impl Clone for LobbyStart {
-    fn clone(&self) -> Self {
-        let ready_tx = self.ready_tx.clone();
-        let event_tx = self.event_tx.clone();
-        let broadcast_rx = self.broadcast_rx.resubscribe();
-        let count = self.count;
-        Self { broadcast_rx, ready_tx, event_tx, count }
-    }
-}
-
-#[derive(Clone, Debug)]
-enum LobbyEvent {
-    Start(LobbyStart),
-    PlayerJoined(LobbyPlayerJoined),
-    PlayerLeft(LobbyPlayerLeft),
-}
-
-impl From<LobbyStart> for LobbyEvent {
-    fn from(value: LobbyStart) -> Self {
-        Self::Start(value)
-    }
-}
-
-impl From<LobbyPlayerJoined> for LobbyEvent {
-    fn from(value: LobbyPlayerJoined) -> Self {
-        Self::PlayerJoined(value)
-    }
-}
-
-impl From<LobbyPlayerLeft> for LobbyEvent {
-    fn from(value: LobbyPlayerLeft) -> Self {
-        Self::PlayerLeft(value)
-    }
-}
-
-struct Lobby {
-    broadcast_tx: broadcast::Sender<LobbyEvent>,
-    players: Slab<ArcStr>,
-}
 
 async fn wait_for_lobby_start<Writer>(
     ws_writer: &mut WebSocketWrite<Writer>,
