@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum PlayerAction {
-    Zip,
+    Zip = 0,
     Zap,
     Zop,
 }
@@ -18,7 +18,7 @@ impl PlayerAction {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct PlayerResponded {
+pub struct PlayerResponds {
     /// ID of the player who responded.
     pub pid: usize,
     /// The targeted next player in the game.

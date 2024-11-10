@@ -2,7 +2,7 @@ use crate::{
     actor::{game::handle_game, send_fn},
     event::{
         lobby::{CreateLobby, LobbyCreated, StartGame},
-        player::PlayerResponded,
+        player::PlayerResponds,
     },
     zzz::ZipZapZop,
 };
@@ -18,15 +18,17 @@ use tracing::{error, info, instrument};
 use triomphe::Arc;
 
 pub struct GameStart {
+    ready_tx: mpsc::Sender<()>,
+    event_tx: mpsc::Sender<PlayerResponds>,
     broadcast_rx: broadcast::Receiver<Arc<[u8]>>,
-    event_tx: mpsc::Sender<PlayerResponded>,
 }
 
 impl Clone for GameStart {
     fn clone(&self) -> Self {
-        let broadcast_rx = self.broadcast_rx.resubscribe();
+        let ready_tx = self.ready_tx.clone();
         let event_tx = self.event_tx.clone();
-        Self { broadcast_rx, event_tx }
+        let broadcast_rx = self.broadcast_rx.resubscribe();
+        Self { broadcast_rx, ready_tx, event_tx }
     }
 }
 
@@ -103,8 +105,9 @@ pub async fn host_actor(lobbies: &Mutex<Slab<Lobby>>, upgrade: UpgradeFut, broad
 
     let (broadcast_tx, broadcast_rx) = broadcast::channel(count);
     let (event_tx, mut event_rx) = mpsc::channel(count);
+    let (ready_tx, mut ready_rx) = mpsc::channel(count);
 
-    match start_tx.send(GameStart { broadcast_rx, event_tx }) {
+    match start_tx.send(GameStart { ready_tx, event_tx, broadcast_rx }) {
         Ok(count) => info!(count, "dispatched game start to listeners"),
         Err(_) => {
             error!("no receivers for game start");
@@ -114,10 +117,11 @@ pub async fn host_actor(lobbies: &Mutex<Slab<Lobby>>, upgrade: UpgradeFut, broad
 
     drop(start_tx);
 
-    // TODO: Synchronize with all players.
+    assert_eq!(ready_rx.recv().await, None, "no messages expected from game ready channel");
+    info!("all players are ready to play");
 
     let mut zzz = ZipZapZop::new(players, pid);
-    handle_game(&broadcast_tx, &mut event_rx, &mut zzz).await;
+    handle_game(&mut event_rx, &broadcast_tx, &mut zzz).await;
 }
 
 #[instrument(skip(lobbies, upgrade))]

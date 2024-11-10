@@ -1,6 +1,6 @@
 use crate::{
     actor::send_fn,
-    event::player::{PlayerAction, PlayerResponded},
+    event::player::{PlayerAction, PlayerResponds},
 };
 use fastwebsockets::{FragmentCollectorRead, Frame, OpCode, Payload, WebSocketWrite};
 use tokio::{
@@ -15,7 +15,7 @@ use triomphe::Arc;
 
 #[instrument(skip(event_tx, ws_reader))]
 pub async fn websocket_msgpack_to_event_actor<Reader>(
-    event_tx: &Sender<PlayerResponded>,
+    event_tx: &Sender<PlayerResponds>,
     ws_reader: &mut FragmentCollectorRead<Reader>,
     pid: usize,
 ) where
@@ -50,7 +50,7 @@ pub async fn websocket_msgpack_to_event_actor<Reader>(
 
     // Gracefully eliminate self from the lobby
     event_tx
-        .send(PlayerResponded { pid, next: pid, action: PlayerAction::Zip })
+        .send(PlayerResponds { pid, next: pid, action: PlayerAction::Zip })
         .await
         .expect("actor must outlive lobby");
 }

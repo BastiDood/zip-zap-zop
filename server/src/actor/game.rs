@@ -1,7 +1,7 @@
 use crate::{
     event::{
         game::{GameConcludes, GameEliminates, GameEvent},
-        player::PlayerResponded,
+        player::PlayerResponds,
     },
     zzz::{GameWinnerError, TickResult, ZipZapZop},
 };
@@ -16,7 +16,7 @@ use triomphe::Arc;
 #[instrument(skip(broadcast_tx, event_rx))]
 async fn handle_game_tick<Player: Debug>(
     broadcast_tx: &Sender<Arc<[u8]>>,
-    event_rx: &mut Receiver<PlayerResponded>,
+    event_rx: &mut Receiver<PlayerResponds>,
     zzz: &mut ZipZapZop<Player>,
 ) -> Result<bool, Arc<[u8]>> {
     match zzz.winner() {
@@ -69,8 +69,8 @@ async fn handle_game_tick<Player: Debug>(
 
 #[instrument(skip(broadcast_tx, event_rx, zzz))]
 pub async fn handle_game<Player: Debug>(
+    event_rx: &mut Receiver<PlayerResponds>,
     broadcast_tx: &Sender<Arc<[u8]>>,
-    event_rx: &mut Receiver<PlayerResponded>,
     zzz: &mut ZipZapZop<Player>,
 ) {
     loop {
