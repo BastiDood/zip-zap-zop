@@ -21,19 +21,22 @@ pub fn route(
         return Ok(());
     }
 
-    if !upgrade::is_upgrade_request(&req) {
-        *res.status_mut() = StatusCode::BAD_REQUEST;
-        return Ok(());
-    }
-
     *res = match req.uri().path() {
-        "/lobbies" => todo!(),
+        "/lobbies" => todo!("event source"),
         "/create" => {
+            if !upgrade::is_upgrade_request(&req) {
+                *res.status_mut() = StatusCode::BAD_REQUEST;
+                return Ok(());
+            }
             let (response, upgrade) = upgrade::upgrade(req)?;
             tokio::spawn(async move { host_actor(&manager, upgrade, 32).await });
             response
         }
         "/join" => {
+            if !upgrade::is_upgrade_request(&req) {
+                *res.status_mut() = StatusCode::BAD_REQUEST;
+                return Ok(());
+            }
             let (response, upgrade) = upgrade::upgrade(req)?;
             tokio::spawn(async move { guest_actor(&manager, upgrade).await });
             response
