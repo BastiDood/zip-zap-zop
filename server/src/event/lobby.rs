@@ -24,18 +24,18 @@ pub struct LobbyJoined {
     pub pid: usize,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct LobbyPlayerJoined {
     pub pid: usize,
     pub player: ArcStr,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct LobbyPlayerLeft {
     pub pid: usize,
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct StartGame {
     pub count: usize,
 }
