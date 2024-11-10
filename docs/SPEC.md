@@ -106,6 +106,15 @@ struct JoinLobby {
 }
 ```
 
+The server responds with a player ID.
+
+```rust
+struct LobbyJoined {
+    /// Unique identifier for the new player.
+    pid: usize,
+}
+```
+
 The server then follows up with a stream of lobby events.
 
 ```rust
