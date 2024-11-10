@@ -24,15 +24,15 @@ The game server sends messages in the [MessagePack] format to minimize the size 
 
 #### List All Open Lobbies
 
-The client requests for a listing of all open lobbies by connecting to the WebSocket endpoint at `/lobbies`. The WebSocket streams the following messages over time. The client must update the user interface accordingly.
+The client requests for a listing of all open lobbies by connecting to the event stream at `/lobbies`. The endpoint streams the following messages over time. The client must update the user interface accordingly.
 
 
 ```rust
 struct LobbyCreated {
     /// Server-specific unique identifier for the lobby.
-    id: u32,
+    id: usize,
     /// Number of players currently in the lobby (including the host).
-    players: u32,
+    players: usize,
     /// Name of the lobby as a string.
     name: Box<str>,
 }
@@ -45,15 +45,6 @@ struct LobbyDissolved {
 }
 ```
 
-```rust
-struct LobbyUpdated {
-    /// Server-specific unique identifier for the updated lobby.
-    id: u32,
-    /// (Optional) new number of players.
-    players: u32,
-}
-```
-
 > [!CAUTION]
 > Note that lobby IDs may be reused when the old one has been dissolved.
 
@@ -63,10 +54,10 @@ A host can create a new lobby by connecting to the `/create` WebSocket endpoint.
 
 ```rust
 struct CreateLobby {
+    /// The proposed name of the lobby.
+    lobby: Box<str>,
     /// The username of the player.
     player: Box<str>,
-    /// The proposed name of the lobby.
-    name: Box<str>,
 }
 ```
 
@@ -75,27 +66,27 @@ The server immediately responds with the newly created lobby ID.
 ```rust
 struct LobbyCreated {
     /// Unique identifier for the lobby.
-    lid: u32,
+    lid: usize,
     /// Unique identifier for the player.
-    pid: u32,
+    pid: usize,
 }
 ```
 
 The server then follows up with a stream of lobby events.
 
 ```rust
-struct PlayerJoined {
+struct LobbyPlayerJoined {
     /// Unique identifier for the new player.
-    id: u32,
+    pid: usize,
     /// The name of the new player.
     name: Box<str>,
 }
 ```
 
 ```rust
-struct PlayerLeft {
+struct LobbyPlayerLeft {
     /// Unique identifier for the leaving player.
-    id: u32,
+    pid: usize,
 }
 ```
 
@@ -109,7 +100,7 @@ A player can join an existing lobby by connecting to the `/join` WebSocket endpo
 ```rust
 struct JoinLobby {
     /// Unique identifier for the lobby.
-    lobby: u32,
+    lid: usize,
     /// The username of the player.
     player: Box<str>,
 }
@@ -118,18 +109,18 @@ struct JoinLobby {
 The server then follows up with a stream of lobby events.
 
 ```rust
-struct PlayerJoined {
+struct LobbyPlayerJoined {
     /// Unique identifier for the new player.
-    id: u32,
+    pid: usize,
     /// The name of the new player.
     name: Box<str>,
 }
 ```
 
 ```rust
-struct PlayerLeft {
+struct LobbyPlayerLeft {
     /// Unique identifier for the leaving player.
-    id: u32,
+    pid: usize,
 }
 ```
 
@@ -137,13 +128,16 @@ When the host has begun the game, the server will send each player (including th
 
 ```rust
 struct GameStarted {
-    uuid: Box<str>,
+    /// The number of players currently known by the game server.
+    count: usize,
 }
 ```
 
-Each client must then acknowledge the game start by echoing this UUID back to the server. Once all players have responded, the game starts as in the ["Start the Game"](#start-the-game) section.
+If the client does not know the same number of peers, then it must disconnect itself from the lobby as a sanity check.
 
-If one of the players do not respond within a timeout, the game must be aborted. The server will simply close the connection.
+To acknowledge the game start, an empty message must be pinged back to the game server. Once all players have responded, the game starts as in the ["Start the Game"](#start-the-game) section.
+
+If any of the players fail to respond within a timeout, the server treats the player as a graceful self-elimination.
 
 #### Leave the Lobby
 
@@ -160,20 +154,33 @@ At any point in time, the host may start the game by sending the current number 
 
 ```rust
 struct StartGame {
-    count: u32,
+    count: usize,
 }
 ```
 
-The server then sends each player an empty WebSocket frame. If any of the players fail to respond with another empty WebSocket frame in time, the game is aborted. The server immediately closes the connection. Otherwise, the game proceeds as in the ["Game Management"](#game-management) section.
+The server then sends each player a `GameStarted` event.
+
+```rust
+struct GameStarted {
+    /// The number of players currently known by the game server.
+    count: usize,
+}
+```
+
+If any of the players fail to respond within a timeout, the server treats the player as a graceful self-elimination.
 
 ### Game Management
 
 At the start of every turn, the server notifies everyone whose turn it is. This player is expected to respond within
 
 ```rust
-struct Expect {
+struct GameExpects {
     /// The player expected to respond.
-    id: u32,
+    pid: usize,
+    /// 0 => Zip
+    /// 1 => Zop
+    /// 2 => Zap
+    action: u8,
 }
 ```
 
@@ -183,13 +190,13 @@ struct Expect {
 The expected player must respond in the following format.
 
 ```rust
-struct Proceed {
+struct PlayerResponds {
     /// The next expected player to respond.
-    id: u32,
+    next: usize,
     /// 0 => Zip
     /// 1 => Zop
     /// 2 => Zap
-    response: u8,
+    action: u8,
 }
 ```
 
@@ -200,7 +207,7 @@ If (1) an unexpected player responds, (2) an expected player responds incorrectl
 ```rust
 struct PlayerEliminated {
     /// The player expected to respond.
-    id: u32,
+    id: usize,
 }
 ```
 
