@@ -15,8 +15,8 @@ use triomphe::Arc;
 
 #[instrument(skip(event_tx, ws_reader))]
 pub async fn websocket_msgpack_to_event_actor<Reader>(
-    event_tx: &Sender<PlayerResponds>,
     ws_reader: &mut FragmentCollectorRead<Reader>,
+    event_tx: &Sender<PlayerResponds>,
     pid: usize,
 ) where
     Reader: AsyncRead + Unpin,
@@ -57,8 +57,8 @@ pub async fn websocket_msgpack_to_event_actor<Reader>(
 
 #[instrument(skip(event_rx, ws_writer))]
 pub async fn event_to_websocket_msgpack_actor<Writer>(
-    event_rx: &mut Receiver<Arc<[u8]>>,
     ws_writer: &mut WebSocketWrite<Writer>,
+    event_rx: &mut Receiver<Arc<[u8]>>,
 ) where
     Writer: AsyncWrite + Unpin,
 {

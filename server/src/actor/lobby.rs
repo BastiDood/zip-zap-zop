@@ -1,5 +1,9 @@
 use crate::{
-    actor::{game::handle_game, send_fn},
+    actor::{
+        game::handle_game,
+        io::{event_to_websocket_msgpack_actor, websocket_msgpack_to_event_actor},
+        send_fn,
+    },
     event::{
         lobby::{CreateLobby, JoinLobby, LobbyCreated, LobbyJoined, LobbyPlayerJoined, LobbyPlayerLeft, StartGame},
         player::{PlayerAction, PlayerResponds},
@@ -7,6 +11,7 @@ use crate::{
     zzz::ZipZapZop,
 };
 use arcstr::ArcStr;
+use core::convert::Infallible;
 use fastwebsockets::{
     upgrade::UpgradeFut, FragmentCollectorRead, Frame, OpCode, Payload, WebSocketError, WebSocketWrite,
 };
@@ -15,13 +20,14 @@ use std::sync::Mutex;
 use tokio::{
     io::{AsyncRead, AsyncWrite},
     sync::{broadcast, mpsc},
+    task::JoinHandle,
 };
 use tracing::{error, info, instrument, trace};
 use triomphe::Arc;
 
 #[derive(Debug)]
 struct LobbyStart {
-    ready_tx: mpsc::Sender<()>,
+    ready_tx: mpsc::Sender<Infallible>,
     event_tx: mpsc::Sender<PlayerResponds>,
     broadcast_rx: broadcast::Receiver<Arc<[u8]>>,
     /// Number of known players in the game.
@@ -68,21 +74,77 @@ struct Lobby {
     players: Slab<ArcStr>,
 }
 
-#[instrument(skip(ws_reader, ws_writer))]
-async fn create_lobby<Reader, Writer>(
-    ws_reader: &mut FragmentCollectorRead<Reader>,
+async fn wait_for_lobby_start<Writer>(
     ws_writer: &mut WebSocketWrite<Writer>,
+    broadcast_rx: &mut broadcast::Receiver<LobbyEvent>,
+) -> Result<Option<LobbyStart>, WebSocketError>
+where
+    Writer: AsyncWrite + Unpin,
+{
+    use broadcast::error::RecvError;
+    Ok(loop {
+        let bytes = match broadcast_rx.recv().await {
+            Ok(LobbyEvent::PlayerJoined(event)) => rmp_serde::to_vec(&event).unwrap(),
+            Ok(LobbyEvent::PlayerLeft(event)) => rmp_serde::to_vec(&event).unwrap(),
+            Ok(LobbyEvent::Start(event)) => {
+                info!("game start notification received");
+                break Some(event);
+            }
+            Err(RecvError::Lagged(count)) => {
+                error!(count, "broadcast receiver lagged while waiting for lobby start");
+                break None;
+            }
+            Err(RecvError::Closed) => {
+                error!("broadcast receiver closed while waiting for lobby start");
+                break None;
+            }
+        };
+        ws_writer.write_frame(Frame::binary(Payload::Owned(bytes))).await?;
+    })
+}
+
+#[instrument(skip(ws_writer, broadcast_rx))]
+async fn detach_host<Writer>(
+    mut ws_writer: WebSocketWrite<Writer>,
+    mut broadcast_rx: broadcast::Receiver<LobbyEvent>,
+    pid: usize,
+) -> mpsc::Sender<PlayerResponds>
+where
+    Writer: AsyncWrite + Send + Unpin + 'static,
+{
+    let LobbyStart { ready_tx, event_tx, mut broadcast_rx, count } =
+        wait_for_lobby_start(&mut ws_writer, &mut broadcast_rx)
+            .await
+            .expect("host websocket connection failed")
+            .expect("origin lobby was prematurely closed");
+    trace!(count, "game start command received with player count");
+
+    // Signal to the lobby that this player is ready
+    info!("player is ready");
+    drop(ready_tx);
+
+    // Partial detachment of host handlers
+    tokio::spawn(async move { event_to_websocket_msgpack_actor(&mut ws_writer, &mut broadcast_rx).await });
+    event_tx // lobby must surrender ownership over the `ws_reader`
+}
+
+#[instrument(skip(ws_reader, ws_writer))]
+async fn detach_host_while_waiting_for_start_command<Reader, Writer>(
+    ws_reader: &mut FragmentCollectorRead<Reader>,
+    mut ws_writer: WebSocketWrite<Writer>,
+    broadcast_rx: broadcast::Receiver<LobbyEvent>,
     lid: usize,
     pid: usize,
-) -> anyhow::Result<usize>
+) -> anyhow::Result<(usize, JoinHandle<mpsc::Sender<PlayerResponds>>)>
 where
     Reader: AsyncRead + Unpin,
-    Writer: AsyncWrite + Unpin,
+    Writer: AsyncWrite + Unpin + Send + 'static,
 {
     let bytes = rmp_serde::to_vec(&LobbyCreated { lid, pid })?;
     ws_writer.write_frame(Frame::binary(Payload::Owned(bytes))).await?;
 
-    // TODO: Relay lobby events to the Host.
+    // Relay lobby events to the host
+    let handle = tokio::spawn(detach_host(ws_writer, broadcast_rx, pid));
 
     let payload = match ws_reader.read_frame(&mut send_fn).await.unwrap() {
         Frame { fin: true, opcode: OpCode::Binary, payload, .. } => payload,
@@ -93,12 +155,12 @@ where
     };
 
     let StartGame { count } = rmp_serde::from_slice(&payload)?;
-    Ok(count)
+    Ok((count, handle))
 }
 
 #[instrument(skip(lobbies, upgrade))]
 pub async fn host_actor(lobbies: &Mutex<Slab<Lobby>>, upgrade: UpgradeFut, broadcast_capacity: usize) {
-    let (ws_reader, mut ws_writer) = upgrade.await.unwrap().split(tokio::io::split);
+    let (ws_reader, ws_writer) = upgrade.await.unwrap().split(tokio::io::split);
     let mut ws_reader = FragmentCollectorRead::new(ws_reader);
 
     let payload = match ws_reader.read_frame(&mut send_fn).await.unwrap() {
@@ -113,15 +175,15 @@ pub async fn host_actor(lobbies: &Mutex<Slab<Lobby>>, upgrade: UpgradeFut, broad
     let CreateLobby { player, lobby } = rmp_serde::from_slice(&payload).unwrap();
     info!(%lobby, %player, "player requested the lobby creation");
 
-    let broadcast_tx = broadcast::Sender::new(broadcast_capacity);
+    let (broadcast_tx, broadcast_rx) = broadcast::channel(broadcast_capacity);
     let mut players = Slab::with_capacity(1);
 
     let pid = players.insert(player);
     let lid = lobbies.lock().unwrap().insert(Lobby { broadcast_tx, players });
 
-    let result = create_lobby(&mut ws_reader, &mut ws_writer, lid, pid).await;
+    let result = detach_host_while_waiting_for_start_command(&mut ws_reader, ws_writer, broadcast_rx, lid, pid).await;
     let Lobby { broadcast_tx: start_tx, players } = lobbies.lock().unwrap().remove(lid);
-    let count = match result {
+    let (count, handle) = match result {
         Ok(count) => count,
         Err(err) => {
             error!(?err, "lobby creation failed");
@@ -133,8 +195,6 @@ pub async fn host_actor(lobbies: &Mutex<Slab<Lobby>>, upgrade: UpgradeFut, broad
         error!(count, "game was started with an incorrect number of players");
         return;
     }
-
-    // TODO: Detach Host from the Lobby as a Player.
 
     let (broadcast_tx, broadcast_rx) = broadcast::channel(count);
     let (event_tx, mut event_rx) = mpsc::channel(count);
@@ -148,8 +208,19 @@ pub async fn host_actor(lobbies: &Mutex<Slab<Lobby>>, upgrade: UpgradeFut, broad
         }
     }
 
-    // Mark the end of events, but note that some events may have slipped through before dropping.
     drop(start_tx);
+
+    // Fulfill the responder half of the host's I/O actor
+    match handle.await {
+        Ok(event_tx) => {
+            tokio::spawn(async move { websocket_msgpack_to_event_actor(&mut ws_reader, &event_tx, pid).await });
+            info!("detached host successfully joined");
+        }
+        Err(err) => {
+            drop(ws_reader);
+            error!(?err, "detached host failed to join");
+        }
+    }
 
     // TODO: Timeout
     assert_eq!(ready_rx.recv().await, None, "no messages expected from game ready channel");
@@ -180,35 +251,6 @@ where
     Ok(())
 }
 
-async fn wait_for_lobby_start<Writer>(
-    ws_writer: &mut WebSocketWrite<Writer>,
-    broadcast_rx: &mut broadcast::Receiver<LobbyEvent>,
-) -> Result<Option<LobbyStart>, WebSocketError>
-where
-    Writer: AsyncWrite + Unpin,
-{
-    use broadcast::error::RecvError;
-    Ok(loop {
-        let bytes = match broadcast_rx.recv().await {
-            Ok(LobbyEvent::PlayerJoined(event)) => rmp_serde::to_vec(&event).unwrap(),
-            Ok(LobbyEvent::PlayerLeft(event)) => rmp_serde::to_vec(&event).unwrap(),
-            Ok(LobbyEvent::Start(event)) => {
-                info!("game start notification received");
-                break Some(event);
-            }
-            Err(RecvError::Lagged(count)) => {
-                error!(count, "broadcast receiver lagged while waiting for lobby start");
-                break None;
-            }
-            Err(RecvError::Closed) => {
-                error!("broadcast receiver closed while waiting for lobby start");
-                break None;
-            }
-        };
-        ws_writer.write_frame(Frame::binary(Payload::Owned(bytes))).await?;
-    })
-}
-
 #[instrument(skip(ws_reader, ws_writer))]
 async fn wait_for_round_trip_ping<Reader, Writer>(
     ws_reader: &mut FragmentCollectorRead<Reader>,
@@ -230,6 +272,7 @@ where
     })
 }
 
+// TODO: Refactor so that `lid` and `pid` are kept in instrumentation spans.
 #[instrument(skip(lobbies, upgrade))]
 pub async fn guest_actor(lobbies: &Mutex<Slab<Lobby>>, upgrade: UpgradeFut) {
     let (ws_reader, mut ws_writer) = upgrade.await.unwrap().split(tokio::io::split);
@@ -268,7 +311,7 @@ pub async fn guest_actor(lobbies: &Mutex<Slab<Lobby>>, upgrade: UpgradeFut) {
             break 'lobby;
         }
 
-        let LobbyStart { ready_tx, event_tx, broadcast_rx, count } =
+        let LobbyStart { ready_tx, event_tx, mut broadcast_rx, count } =
             match wait_for_lobby_start(&mut ws_writer, &mut broadcast_rx).await {
                 Ok(Some(event)) => event,
                 Ok(None) => {
@@ -284,7 +327,10 @@ pub async fn guest_actor(lobbies: &Mutex<Slab<Lobby>>, upgrade: UpgradeFut) {
         'game: {
             match wait_for_round_trip_ping(&mut ws_reader, &mut ws_writer, count).await {
                 Ok(true) => (),
-                Ok(false) => break 'game,
+                Ok(false) => {
+                    error!("unexpected websocket frame format");
+                    break 'game;
+                }
                 Err(err) => {
                     error!(?err, "websocket writer error while waiting for round trip ping");
                     break 'game;
@@ -292,10 +338,12 @@ pub async fn guest_actor(lobbies: &Mutex<Slab<Lobby>>, upgrade: UpgradeFut) {
             }
 
             // Signal to the lobby that this player is ready
+            info!("player is ready");
             drop(ready_tx);
 
-            // TODO: Play the game.
-
+            // Play the game
+            tokio::spawn(async move { websocket_msgpack_to_event_actor(&mut ws_reader, &event_tx, pid).await });
+            tokio::spawn(async move { event_to_websocket_msgpack_actor(&mut ws_writer, &mut broadcast_rx).await });
             return;
         }
 
