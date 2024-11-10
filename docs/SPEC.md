@@ -30,7 +30,7 @@ The client requests for a listing of all open lobbies by connecting to the event
 ```rust
 struct LobbyCreated {
     /// Server-specific unique identifier for the lobby.
-    id: usize,
+    lid: usize,
     /// Number of players currently in the lobby (including the host).
     players: usize,
     /// Name of the lobby as a string.
@@ -41,7 +41,7 @@ struct LobbyCreated {
 ```rust
 struct LobbyDissolved {
     /// Server-specific unique identifier for the dissolved lobby.
-    id: u32,
+    lid: usize,
 }
 ```
 
@@ -207,11 +207,11 @@ If (1) an unexpected player responds, (2) an expected player responds incorrectl
 ```rust
 struct PlayerEliminated {
     /// The player expected to respond.
-    id: usize,
+    pid: usize,
 }
 ```
 
-The next `Expect` message will be of the player who caused the elimination, but must now start at Zip. If no such "previous" player exists, the next Zip is chosen randomly.
+The next `GameExpects` message will be of the player who caused the elimination, but must now start at Zip. If no such "previous" player exists, the next Zip is chosen randomly.
 
 > [!NOTE]
 > The eliminated player may continue to spectate the game. Ideally, the eliminated players must be put at a lower priority than the actual players in the game.
