@@ -39,6 +39,7 @@ async fn handle_game_tick<Player: Debug>(
     let count = broadcast_tx.send(bytes).map_err(|SendError(bytes)| bytes)?;
     trace!(count, "broadcasted game event");
 
+    // TODO: Timeout
     while let Some(event) = event_rx.recv().await {
         let span = info_span!("player-event", ?event);
         let _guard = span.enter();
