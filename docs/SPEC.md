@@ -190,6 +190,8 @@ struct GameExpects {
     /// 1 => Zop
     /// 2 => Zap
     action: u8,
+    /// [RFC 3339](https://www.rfc-editor.org/rfc/rfc3339) timestamp of the deadline.
+    deadline: Box<str>,
 }
 ```
 
