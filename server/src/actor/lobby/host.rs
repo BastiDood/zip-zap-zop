@@ -12,6 +12,7 @@ use crate::{
     router::lobby::{Lobby, LobbyManager},
     zzz::ZipZapZop,
 };
+use core::time::Duration;
 use fastwebsockets::{upgrade::UpgradeFut, FragmentCollectorRead, Frame, OpCode, Payload, WebSocketWrite};
 use slab::Slab;
 use std::sync::Mutex;
@@ -19,6 +20,7 @@ use tokio::{
     io::{AsyncRead, AsyncWrite},
     sync::{broadcast, mpsc},
     task::JoinHandle,
+    time::timeout,
 };
 use tracing::{error, info, instrument, trace};
 
@@ -142,10 +144,13 @@ pub async fn host_actor(lobbies: &Mutex<LobbyManager>, upgrade: UpgradeFut, broa
         }
     }
 
-    // TODO: Timeout
-    assert_eq!(ready_rx.recv().await, None, "no messages expected from game ready channel");
+    match timeout(Duration::from_secs(4), ready_rx.recv()).await {
+        Ok(Some(_)) => unreachable!("no messages expected from game ready channel"),
+        Ok(None) => info!("all players are ready to play"),
+        Err(err) => error!(?err, "timeout elapsed - only some players responded in time"),
+    }
+
     drop(ready_rx);
-    info!("all players are ready to play");
 
     let mut zzz = ZipZapZop::new(players, pid);
     handle_game(&mut event_rx, &broadcast_tx, &mut zzz).await;
