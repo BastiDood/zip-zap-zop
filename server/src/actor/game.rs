@@ -1,14 +1,18 @@
 use crate::{
     event::{
-        game::{GameConcludes, GameEliminates, GameEvent},
+        game::{GameConcludes, GameEliminates, GameEvent, GameExpects},
         player::PlayerResponds,
     },
     zzz::{GameWinnerError, TickResult, ZipZapZop},
 };
-use core::fmt::Debug;
-use tokio::sync::{
-    broadcast::{error::SendError, Sender},
-    mpsc::Receiver,
+use core::{fmt::Debug, time::Duration};
+use jiff::Timestamp;
+use tokio::{
+    sync::{
+        broadcast::{error::SendError, Sender},
+        mpsc::Receiver,
+    },
+    time::timeout,
 };
 use tracing::{error, info, info_span, instrument, trace, warn};
 use triomphe::Arc;
@@ -18,6 +22,7 @@ async fn handle_game_tick<Player: Debug>(
     broadcast_tx: &Sender<Arc<[u8]>>,
     event_rx: &mut Receiver<PlayerResponds>,
     zzz: &mut ZipZapZop<Player>,
+    round: &mut u32,
 ) -> Result<bool, Arc<[u8]>> {
     match zzz.winner() {
         Ok((pid, player)) => {
@@ -34,35 +39,52 @@ async fn handle_game_tick<Player: Debug>(
         Err(GameWinnerError::MorePlayers) => (),
     }
 
-    let expects = *zzz.expects();
+    let secs = 4.0 * (-f64::from(*round) / 16.0).exp();
+    let duration = Duration::from_secs_f64(secs);
+    let deadline = Timestamp::now().saturating_add(duration);
+
+    let expects = zzz.expects(deadline);
     let bytes = rmp_serde::to_vec(&GameEvent::from(expects)).unwrap().into();
     let count = broadcast_tx.send(bytes).map_err(|SendError(bytes)| bytes)?;
     trace!(count, "broadcasted game event");
 
-    // TODO: Timeout
-    while let Some(event) = event_rx.recv().await {
+    loop {
+        let event = match timeout(duration, event_rx.recv()).await {
+            Ok(Some(event)) => event,
+            Ok(None) => {
+                error!("all players have left the game");
+                return Ok(false);
+            }
+            Err(err) => {
+                warn!(?err, "round timeout elapsed - gracefully eliminating current player");
+                let GameExpects { curr, action, .. } = expects;
+                PlayerResponds { pid: curr, next: curr, action }
+            }
+        };
+
         let span = info_span!("player-event", ?event);
         let _guard = span.enter();
 
         let pid = event.pid;
-        let player = match zzz.tick(event) {
+        match zzz.tick(event) {
             TickResult::NoOp => {
                 info!("game state no-op transition");
                 continue;
             }
             TickResult::Proceed => {
                 info!("game state successfully transitioned");
+                *round += 1; // increment per successful transition
                 break;
             }
-            TickResult::Eliminated(player) => player,
-        };
-
-        let bytes = rmp_serde::to_vec(&GameEvent::from(GameEliminates { pid })).unwrap().into();
-        let count = broadcast_tx.send(bytes).map_err(|SendError(bytes)| bytes)?;
-        trace!(count, "broadcasted game event");
-
-        info!(?player, "player eliminated");
-        break;
+            TickResult::Eliminated(player) => {
+                let bytes = rmp_serde::to_vec(&GameEvent::from(GameEliminates { pid })).unwrap().into();
+                let count = broadcast_tx.send(bytes).map_err(|SendError(bytes)| bytes)?;
+                trace!(count, "broadcasted game event");
+                info!(?player, "player eliminated");
+                *round = 0; // reset per elimination
+                break;
+            }
+        }
     }
 
     Ok::<_, Arc<[u8]>>(true)
@@ -74,8 +96,9 @@ pub async fn handle_game<Player: Debug>(
     broadcast_tx: &Sender<Arc<[u8]>>,
     zzz: &mut ZipZapZop<Player>,
 ) {
+    let mut round = 0;
     loop {
-        match handle_game_tick(broadcast_tx, event_rx, zzz).await {
+        match handle_game_tick(broadcast_tx, event_rx, zzz, &mut round).await {
             Ok(true) => continue,
             Ok(false) => break,
             Err(bytes) => {

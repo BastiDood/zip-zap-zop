@@ -23,6 +23,11 @@ features = ["upgrade", "unstable-split"]
 version = "1.5"
 features = ["server", "http1"]
 
+[dependencies.jiff]
+version = "0.1.14"
+default-features = false
+features = ["std", "serde"]
+
 [dependencies.serde]
 version = "1.0.213"
 default-features = false

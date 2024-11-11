@@ -1,8 +1,12 @@
 #[cfg(test)]
 mod tests;
 
-use crate::event::{game::GameExpects, player::PlayerResponds};
+use crate::event::{
+    game::GameExpects,
+    player::{PlayerAction, PlayerResponds},
+};
 use core::fmt::Debug;
+use jiff::Timestamp;
 use slab::Slab;
 use tracing::{info, instrument, warn};
 
@@ -16,17 +20,19 @@ pub enum GameWinnerError {
 #[derive(Debug)]
 pub struct ZipZapZop<Player> {
     players: Slab<Player>,
-    expects: GameExpects,
+    curr: usize,
+    action: PlayerAction,
 }
 
 impl<Player> ZipZapZop<Player> {
     pub const fn new(players: Slab<Player>, curr: usize) -> Self {
-        Self { players, expects: GameExpects::new(curr) }
+        Self { players, curr, action: PlayerAction::Zip }
     }
 
     /// The action for the next expected message.
-    pub const fn expects(&self) -> &GameExpects {
-        &self.expects
+    pub const fn expects(&self, deadline: Timestamp) -> GameExpects {
+        let Self { curr, action, .. } = *self;
+        GameExpects { curr, action, deadline }
     }
 
     pub fn winner(&self) -> Result<(usize, &Player), GameWinnerError> {
@@ -64,8 +70,8 @@ impl<Player: Debug> ZipZapZop<Player> {
         }
 
         let must_reassign = 'eliminate: {
-            if pid != self.expects.curr {
-                warn!(curr = self.expects.curr, "player eliminated because it is not their turn");
+            if pid != self.curr {
+                warn!(curr = self.curr, "player eliminated because it is not their turn");
                 break 'eliminate false;
             }
 
@@ -79,12 +85,14 @@ impl<Player: Debug> ZipZapZop<Player> {
                 break 'eliminate true;
             }
 
-            if action != self.expects.action {
-                warn!(action = ?self.expects.action, "player eliminated due to unexpected action");
+            if action != self.action {
+                warn!(action = ?self.action, "player eliminated due to unexpected action");
                 break 'eliminate true;
             }
 
-            self.expects.tick(next);
+            self.curr = next;
+            self.action = self.action.next();
+
             info!("successful transition to next turn");
             return TickResult::Proceed;
         };
@@ -93,7 +101,7 @@ impl<Player: Debug> ZipZapZop<Player> {
 
         if must_reassign {
             let (next, _) = self.players.iter().next().expect("at least one player must be present");
-            self.expects.set_curr(next);
+            self.curr = next;
         }
 
         TickResult::Eliminated(result)
