@@ -34,7 +34,7 @@ struct LobbyCreated {
     /// Number of players currently in the lobby (including the host).
     players: usize,
     /// Name of the lobby as a string.
-    name: Box<str>,
+    lobby: Box<str>,
 }
 ```
 
@@ -79,7 +79,7 @@ struct LobbyPlayerJoined {
     /// Unique identifier for the new player.
     pid: usize,
     /// The name of the new player.
-    name: Box<str>,
+    player: Box<str>,
 }
 ```
 
@@ -122,7 +122,7 @@ struct LobbyPlayerJoined {
     /// Unique identifier for the new player.
     pid: usize,
     /// The name of the new player.
-    name: Box<str>,
+    player: Box<str>,
 }
 ```
 
