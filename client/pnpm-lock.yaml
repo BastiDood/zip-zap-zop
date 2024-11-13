@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@msgpack/msgpack':
+        specifier: 3.0.0-beta2
+        version: 3.0.0-beta2
       '@sveltejs/kit':
         specifier: ^2.8.0
         version: 2.8.0(@sveltejs/vite-plugin-svelte@4.0.0(svelte@5.1.15)(vite@5.4.11(terser@5.36.0)))(svelte@5.1.15)(vite@5.4.11(terser@5.36.0))
@@ -377,6 +380,10 @@ packages:
   '@linthtml/linthtml@0.10.1':
     resolution: {integrity: sha512-u/Kza7F16LEF2G2mPRDXwNFTDru0fvrWwotN+P5dsjuZPHhp9K1knC4WvpNw4S5DzecGF/P7judsLq+Wel1eFg==}
     hasBin: true
+
+  '@msgpack/msgpack@3.0.0-beta2':
+    resolution: {integrity: sha512-y+l1PNV0XDyY8sM3YtuMLK5vE3/hkfId+Do8pLo/OPxfxuFAUwcGz3oiiUuV46/aBpwTzZ+mRWVMtlSKbradhw==}
+    engines: {node: '>= 14'}
 
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
@@ -2499,6 +2506,8 @@ snapshots:
       table-layout: 3.0.2
     transitivePeerDependencies:
       - typescript
+
+  '@msgpack/msgpack@3.0.0-beta2': {}
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
