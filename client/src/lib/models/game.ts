@@ -6,6 +6,7 @@ export interface StartGame {
 }
 
 export const GameStarted = v.object({
+    type: v.literal('GameStarted'),
     count: v.bigint(),
 });
 
@@ -19,7 +20,10 @@ export const GameExpects = v.object({
     type: v.literal('GameExpects'),
     pid: Id,
     action: v.picklist([PlayerAction.Zip, PlayerAction.Zap, PlayerAction.Zop]),
-    deadline: v.pipe(v.string(), v.transform(date => new Date(date))),
+    deadline: v.pipe(
+        v.string(),
+        v.transform(date => new Date(date)),
+    ),
 });
 
 export type GameExpects = v.InferOutput<typeof GameExpects>;
