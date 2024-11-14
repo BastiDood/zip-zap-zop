@@ -9,19 +9,21 @@ export const GameStarted = v.object({
     count: v.bigint(),
 });
 
-export type GameStarted = v.InferOutput<typeof GameStarted>;
-
 const enum PlayerAction {
     Zip = 0,
     Zap,
     Zop,
 }
 
-export interface GameExpects {
-    pid: Id;
-    action: PlayerAction;
-    deadline: Date;
-}
+export const GameExpects = v.object({
+    type: v.literal('GameExpects'),
+    pid: Id,
+    action: v.picklist([PlayerAction.Zip, PlayerAction.Zap, PlayerAction.Zop]),
+    deadline: v.pipe(v.string(), v.transform(date => new Date(date))),
+});
+
+export type GameExpects = v.InferOutput<typeof GameExpects>;
+export type GameStarted = v.InferOutput<typeof GameStarted>;
 
 export interface PlayerResponds {
     next: Id;
@@ -29,5 +31,11 @@ export interface PlayerResponds {
 }
 
 export const PlayerEliminated = v.object({
+    type: v.literal('PlayerEliminated'),
     pid: Id,
 });
+
+export type PlayerEliminated = v.InferOutput<typeof PlayerEliminated>;
+
+export const GameEvent = v.variant('type', [GameExpects, PlayerEliminated]);
+export type GameEvent = v.InferOutput<typeof GameEvent>;
