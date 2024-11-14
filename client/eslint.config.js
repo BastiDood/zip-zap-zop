@@ -45,7 +45,6 @@ export default tsEslint.config(
             'default-case': 'error',
             'dot-notation': 'error',
             eqeqeq: 'error',
-            'func-style': ['error', 'declaration'],
             'init-declarations': 'error',
             'logical-assignment-operators': 'error',
             'new-cap': 'error',
