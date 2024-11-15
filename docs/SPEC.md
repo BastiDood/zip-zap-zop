@@ -229,7 +229,13 @@ The next `GameExpects` message will be of the player who caused the elimination,
 
 #### End the Game
 
-The game ends when there is only one player left. At this point, the server closes the connection after the sending the final `PlayerEliminated` message. The client is expected to render this state properly.
+The game ends when there is only one player left. At this point, the server closes the connection after the sending the final `PlayerEliminated` message. The client is expected to render this state properly. The server concludes the game by sending a `GameConcludes` message.
+
+```rust
+struct GameConcludes {
+    pid: usize,
+}
+```
 
 ## Technical Details
 

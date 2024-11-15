@@ -26,6 +26,7 @@ export class RunGameState {
 
     players: SvelteMap<bigint, string>;
     events = $state<(GameExpects | PlayerEliminated)[]>([]);
+    winner = $state<bigint | null>(null);
 
     constructor(ws: WebSocket, players: SvelteMap<bigint, string>, expected: bigint) {
         const actual = BigInt(players.size);
@@ -42,6 +43,9 @@ export class RunGameState {
                 case 'PlayerEliminated':
                     this.players.delete(event.pid);
                     this.events.push(event);
+                    break;
+                case 'GameConcludes':
+                    this.winner = event.pid;
                     break;
                 default:
                     throw new Error('unknown game event type');

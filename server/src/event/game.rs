@@ -23,6 +23,7 @@ pub struct GameConcludes {
 }
 
 #[derive(Clone, Copy, Serialize)]
+#[serde(tag = "type")]
 pub enum GameEvent {
     Expects(GameExpects),
     Eliminates(GameEliminates),

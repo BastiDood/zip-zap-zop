@@ -26,6 +26,11 @@ export const GameExpects = v.object({
     ),
 });
 
+export const GameConcludes = v.object({
+    type: v.literal('GameConcludes'),
+    pid: Id,
+});
+
 export type GameExpects = v.InferOutput<typeof GameExpects>;
 export type GameStarted = v.InferOutput<typeof GameStarted>;
 
@@ -41,5 +46,5 @@ export const PlayerEliminated = v.object({
 
 export type PlayerEliminated = v.InferOutput<typeof PlayerEliminated>;
 
-export const GameEvent = v.variant('type', [GameExpects, PlayerEliminated]);
+export const GameEvent = v.variant('type', [GameExpects, PlayerEliminated, GameConcludes]);
 export type GameEvent = v.InferOutput<typeof GameEvent>;
