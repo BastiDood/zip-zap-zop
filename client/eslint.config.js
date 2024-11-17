@@ -42,7 +42,6 @@ export default tsEslint.config(
             'class-methods-use-this': 'error',
             'consistent-this': ['error', 'self'],
             curly: ['error', 'multi'],
-            'default-case': 'error',
             'dot-notation': 'error',
             eqeqeq: 'error',
             'init-declarations': 'error',
