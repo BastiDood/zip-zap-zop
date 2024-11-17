@@ -218,7 +218,7 @@ struct PlayerResponds {
 If (1) an unexpected player responds, (2) an expected player responds incorrectly, or (3) a player disconnects, they must be eliminated from the game. Everyone is notified about this event.
 
 ```rust
-struct PlayerEliminated {
+struct GameEliminated {
     /// The player expected to respond.
     pid: usize,
 }
@@ -231,7 +231,7 @@ The next `GameExpected` message will be of the player who caused the elimination
 
 #### End the Game
 
-The game ends when there is only one player left. At this point, the server closes the connection after the sending the final `PlayerEliminated` message. The client is expected to render this state properly. The server concludes the game by sending a `GameConcluded` message.
+The game ends when there is only one player left. At this point, the server closes the connection after the sending the final `GameEliminated` message. The client is expected to render this state properly. The server concludes the game by sending a `GameConcluded` message.
 
 ```rust
 struct GameConcluded {
