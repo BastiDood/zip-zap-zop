@@ -68,7 +68,7 @@ where
     // Relay lobby events to the host
     let handle = tokio::spawn(detach_host(ws_writer, broadcast_rx, pid));
 
-    let payload = match ws_reader.read_frame(&mut send_fn).await.unwrap() {
+    let payload = match ws_reader.read_frame(&mut send_fn).await? {
         Frame { fin: true, opcode: OpCode::Binary, payload, .. } => payload,
         Frame { fin, opcode, payload, .. } => {
             error!(fin, ?opcode, ?payload, "unexpected frame format");
