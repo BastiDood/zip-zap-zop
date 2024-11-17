@@ -7,6 +7,7 @@ import { decode, encode } from '@msgpack/msgpack';
 import { parse } from 'valibot';
 
 import { SvelteMap } from 'svelte/reactivity';
+import { ZZZ_WEBSOCKET_BASE_URL } from '$lib/env';
 
 function send(ws: WebSocket, data: unknown) {
     ws.send(encode(data, { useBigInt64: true }));
@@ -32,36 +33,57 @@ export class State {
     /** Lobby name. */
     lobby = $state<string | null>(null);
 
-    constructor(ws: WebSocket, schema: typeof GuestEvent | typeof HostEvent) {
+    private constructor(ws: WebSocket, schema: typeof GuestEvent | typeof HostEvent) {
         ws.binaryType = 'arraybuffer';
         this.#ws = ws;
         this.#schema = schema;
-
-        const controller = new AbortController();
-        ws.addEventListener('close', () => controller.abort(), { once: true });
-        ws.addEventListener(
-            'message',
-            event => {
-                if (event.data instanceof ArrayBuffer) this.#tick(decode(event.data, { useBigInt64: true }));
-                else throw new Error('unexpected message format');
-            },
-            { signal: controller.signal },
-        );
     }
 
     /** Start the state machine as a lobby "host". */
-    static host(ws: WebSocket, lobby: string, player: string) {
-        const state = new State(ws, HostEvent);
+    static host(lobby: string, player: string) {
+        const state = new State(new WebSocket(new URL('create', ZZZ_WEBSOCKET_BASE_URL)), HostEvent);
         state.lobby = lobby;
-        send(state.#ws, { lobby, player } satisfies CreateLobby);
+        state.#ws.addEventListener(
+            'open',
+            () => {
+                const controller = new AbortController();
+                state.#ws.addEventListener('close', () => controller.abort(), { once: true });
+                state.#ws.addEventListener(
+                    'message',
+                    event => {
+                        if (event.data instanceof ArrayBuffer) state.#tick(decode(event.data, { useBigInt64: true }));
+                        else throw new Error('unexpected message format');
+                    },
+                    { signal: controller.signal },
+                );
+                send(state.#ws, { lobby, player } satisfies CreateLobby);
+            },
+            { once: true },
+        );
         return state;
     }
 
     /** Start the state machine as a lobby "guest". */
-    static guest(ws: WebSocket, lid: Id, player: string) {
-        const state = new State(ws, GuestEvent);
+    static guest(lid: Id, player: string) {
+        const state = new State(new WebSocket(new URL('join', ZZZ_WEBSOCKET_BASE_URL)), GuestEvent);
         state.lid = lid;
-        send(state.#ws, { lid, player } satisfies JoinLobby);
+        state.#ws.addEventListener(
+            'open',
+            () => {
+                const controller = new AbortController();
+                state.#ws.addEventListener('close', () => controller.abort(), { once: true });
+                state.#ws.addEventListener(
+                    'message',
+                    event => {
+                        if (event.data instanceof ArrayBuffer) state.#tick(decode(event.data, { useBigInt64: true }));
+                        else throw new Error('unexpected message format');
+                    },
+                    { signal: controller.signal },
+                );
+                send(state.#ws, { lid, player } satisfies JoinLobby);
+            },
+            { once: true },
+        );
         return state;
     }
 
