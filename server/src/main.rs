@@ -6,26 +6,25 @@ mod zzz;
 use router::lobby::LobbyManager;
 use std::{net::Ipv4Addr, sync::Mutex};
 use tokio::net::TcpListener;
-use tracing::{error, info_span, warn, Instrument};
+use tracing::{error, info, info_span, warn, Instrument};
 use triomphe::Arc;
 
 fn main() -> anyhow::Result<()> {
     let port = std::env::var("PORT")?.parse()?;
-    tracing_subscriber::fmt::init();
+    tracing_forest::init();
 
     let runtime = tokio::runtime::Builder::new_multi_thread().enable_io().enable_time().build()?;
     let signal = runtime.block_on(async {
         let mut signal = core::pin::pin!(tokio::signal::ctrl_c());
         let tcp = TcpListener::bind((Ipv4Addr::UNSPECIFIED, port)).await?;
+        info!(port, "successfully listening to socket");
 
         let http = hyper::server::conn::http1::Builder::new();
         let manager = Arc::<Mutex<LobbyManager>>::default();
         loop {
             let conn = tokio::select! {
                 biased;
-                signal = &mut signal => {
-                    break signal;
-                }
+                signal = &mut signal => break signal,
                 conn = tcp.accept() => conn,
             };
 

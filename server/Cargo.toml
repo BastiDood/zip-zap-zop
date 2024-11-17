@@ -37,10 +37,10 @@ features = ["derive"]
 version = "0.4.9"
 features = ["serde"]
 
-[dependencies.tracing-subscriber]
-version = "0.3.18"
+[dependencies.tracing-forest]
+version = "0.1.6"
 default-features = false
-features = ["ansi", "fmt", "smallvec"]
+features = ["ansi", "chrono", "smallvec"]
 
 [dependencies.triomphe]
 version = "0.1.14"
