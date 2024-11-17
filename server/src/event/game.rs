@@ -3,7 +3,7 @@ use jiff::Timestamp;
 use serde::Serialize;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
-pub struct GameExpects {
+pub struct GameExpected {
     /// The game expects the player with this ID to respond.
     pub curr: usize,
     pub action: PlayerAction,
@@ -11,13 +11,13 @@ pub struct GameExpects {
 }
 
 #[derive(Clone, Copy, Serialize)]
-pub struct GameEliminates {
+pub struct GameEliminated {
     /// The ID of the eliminated player.
     pub pid: usize,
 }
 
 #[derive(Clone, Copy, Serialize)]
-pub struct GameConcludes {
+pub struct GameConcluded {
     /// The player ID of the winner.
     pub pid: usize,
 }
@@ -25,25 +25,25 @@ pub struct GameConcludes {
 #[derive(Clone, Copy, Serialize)]
 #[serde(tag = "type")]
 pub enum GameEvent {
-    Expects(GameExpects),
-    Eliminates(GameEliminates),
-    Concludes(GameConcludes),
+    Expected(GameExpected),
+    Eliminated(GameEliminated),
+    Concluded(GameConcluded),
 }
 
-impl From<GameExpects> for GameEvent {
-    fn from(value: GameExpects) -> Self {
-        Self::Expects(value)
+impl From<GameExpected> for GameEvent {
+    fn from(value: GameExpected) -> Self {
+        Self::Expected(value)
     }
 }
 
-impl From<GameEliminates> for GameEvent {
-    fn from(value: GameEliminates) -> Self {
-        Self::Eliminates(value)
+impl From<GameEliminated> for GameEvent {
+    fn from(value: GameEliminated) -> Self {
+        Self::Eliminated(value)
     }
 }
 
-impl From<GameConcludes> for GameEvent {
-    fn from(value: GameConcludes) -> Self {
-        Self::Concludes(value)
+impl From<GameConcluded> for GameEvent {
+    fn from(value: GameConcluded) -> Self {
+        Self::Concluded(value)
     }
 }

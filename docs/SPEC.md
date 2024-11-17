@@ -183,7 +183,7 @@ If any of the players fail to respond within a timeout, the server treats the pl
 At the start of every turn, the server notifies everyone whose turn it is. This player is expected to respond within
 
 ```rust
-struct GameExpects {
+struct GameExpected {
     /// The player expected to respond.
     pid: usize,
     /// 0 => Zip
@@ -222,17 +222,17 @@ struct PlayerEliminated {
 }
 ```
 
-The next `GameExpects` message will be of the player who caused the elimination, but must now start at Zip. If no such "previous" player exists, the next Zip is chosen randomly.
+The next `GameExpected` message will be of the player who caused the elimination, but must now start at Zip. If no such "previous" player exists, the next Zip is chosen randomly.
 
 > [!NOTE]
 > The eliminated player may continue to spectate the game. Ideally, the eliminated players must be put at a lower priority than the actual players in the game.
 
 #### End the Game
 
-The game ends when there is only one player left. At this point, the server closes the connection after the sending the final `PlayerEliminated` message. The client is expected to render this state properly. The server concludes the game by sending a `GameConcludes` message.
+The game ends when there is only one player left. At this point, the server closes the connection after the sending the final `PlayerEliminated` message. The client is expected to render this state properly. The server concludes the game by sending a `GameConcluded` message.
 
 ```rust
-struct GameConcludes {
+struct GameConcluded {
     pid: usize,
 }
 ```

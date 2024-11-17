@@ -1,4 +1,4 @@
-import { GameEvent, type GameExpects, GameStarted, type PlayerEliminated, type PlayerResponds } from '$lib/models/game';
+import { GameEvent, type GameExpected, GameStarted, type PlayerEliminated, type PlayerResponds } from '$lib/models/game';
 import {
     assertArrayBufferPayload,
     listenForMessagesOnWebSocket,
@@ -25,7 +25,7 @@ export class RunGameState {
     #onMessageController: AbortController;
 
     players: SvelteMap<bigint, string>;
-    events = $state<(GameExpects | PlayerEliminated)[]>([]);
+    events = $state<(GameExpected | PlayerEliminated)[]>([]);
     winner = $state<bigint | null>(null);
 
     constructor(ws: WebSocket, players: SvelteMap<bigint, string>, expected: bigint) {
@@ -37,14 +37,14 @@ export class RunGameState {
         this.#onMessageController = listenForMessagesOnWebSocket(ws, data => {
             const event = parse(GameEvent, data);
             switch (event.type) {
-                case 'GameExpects':
+                case 'GameExpected':
                     this.events.push(event);
                     break;
                 case 'PlayerEliminated':
                     this.players.delete(event.pid);
                     this.events.push(event);
                     break;
-                case 'GameConcludes':
+                case 'GameConcluded':
                     this.winner = event.pid;
                     break;
                 default:

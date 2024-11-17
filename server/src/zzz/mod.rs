@@ -2,7 +2,7 @@
 mod tests;
 
 use crate::event::{
-    game::GameExpects,
+    game::GameExpected,
     player::{PlayerAction, PlayerResponds},
 };
 use core::fmt::Debug;
@@ -30,9 +30,9 @@ impl<Player> ZipZapZop<Player> {
     }
 
     /// The action for the next expected message.
-    pub const fn expects(&self, deadline: Timestamp) -> GameExpects {
+    pub const fn expects(&self, deadline: Timestamp) -> GameExpected {
         let Self { curr, action, .. } = *self;
-        GameExpects { curr, action, deadline }
+        GameExpected { curr, action, deadline }
     }
 
     pub fn winner(&self) -> Result<(usize, &Player), GameWinnerError> {

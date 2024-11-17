@@ -1,6 +1,6 @@
 use crate::{
     event::{
-        game::{GameConcludes, GameEliminates, GameEvent, GameExpects},
+        game::{GameConcluded, GameEliminated, GameEvent, GameExpected},
         player::PlayerResponds,
     },
     zzz::{GameWinnerError, TickResult, ZipZapZop},
@@ -27,7 +27,7 @@ async fn handle_game_tick<Player: Debug>(
     match zzz.winner() {
         Ok((pid, player)) => {
             info!(pid, ?player, "game concluded with winner");
-            let bytes = rmp_serde::to_vec(&GameEvent::from(GameConcludes { pid })).unwrap().into();
+            let bytes = rmp_serde::to_vec(&GameEvent::from(GameConcluded { pid })).unwrap().into();
             let count = broadcast_tx.send(bytes).map_err(|SendError(bytes)| bytes)?;
             trace!(count, "broadcasted game event");
             return Ok(false);
@@ -57,7 +57,7 @@ async fn handle_game_tick<Player: Debug>(
             }
             Err(err) => {
                 warn!(?err, "round timeout elapsed - gracefully eliminating current player");
-                let GameExpects { curr, action, .. } = expects;
+                let GameExpected { curr, action, .. } = expects;
                 PlayerResponds { pid: curr, next: curr, action }
             }
         };
@@ -77,7 +77,7 @@ async fn handle_game_tick<Player: Debug>(
                 break;
             }
             TickResult::Eliminated(player) => {
-                let bytes = rmp_serde::to_vec(&GameEvent::from(GameEliminates { pid })).unwrap().into();
+                let bytes = rmp_serde::to_vec(&GameEvent::from(GameEliminated { pid })).unwrap().into();
                 let count = broadcast_tx.send(bytes).map_err(|SendError(bytes)| bytes)?;
                 trace!(count, "broadcasted game event");
                 info!(?player, "player eliminated");

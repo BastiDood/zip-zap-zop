@@ -16,8 +16,8 @@ const enum PlayerAction {
     Zop,
 }
 
-export const GameExpects = v.object({
-    type: v.literal('GameExpects'),
+export const GameExpected = v.object({
+    type: v.literal('GameExpected'),
     pid: Id,
     action: v.picklist([PlayerAction.Zip, PlayerAction.Zap, PlayerAction.Zop]),
     deadline: v.pipe(
@@ -26,13 +26,14 @@ export const GameExpects = v.object({
     ),
 });
 
-export const GameConcludes = v.object({
-    type: v.literal('GameConcludes'),
+export const GameConcluded = v.object({
+    type: v.literal('GameConcluded'),
     pid: Id,
 });
 
-export type GameExpects = v.InferOutput<typeof GameExpects>;
 export type GameStarted = v.InferOutput<typeof GameStarted>;
+export type GameExpected = v.InferOutput<typeof GameExpected>;
+export type GameConcluded = v.InferOutput<typeof GameConcluded>;
 
 export interface PlayerResponds {
     next: Id;
@@ -46,5 +47,5 @@ export const PlayerEliminated = v.object({
 
 export type PlayerEliminated = v.InferOutput<typeof PlayerEliminated>;
 
-export const GameEvent = v.variant('type', [GameExpects, PlayerEliminated, GameConcludes]);
+export const GameEvent = v.variant('type', [GameExpected, PlayerEliminated, GameConcluded]);
 export type GameEvent = v.InferOutput<typeof GameEvent>;
