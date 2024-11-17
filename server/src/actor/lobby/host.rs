@@ -8,6 +8,7 @@ use crate::{
     event::{
         lobby::{CreateLobby, LobbyCreated, StartGame},
         player::PlayerResponds,
+        Event,
     },
     router::lobby::{Lobby, LobbyManager},
     zzz::ZipZapZop,
@@ -61,7 +62,7 @@ where
     Reader: AsyncRead + Unpin,
     Writer: AsyncWrite + Unpin + Send + 'static,
 {
-    let bytes = rmp_serde::to_vec(&LobbyCreated { lid, pid })?;
+    let bytes = rmp_serde::to_vec(&Event::from(LobbyCreated { lid, pid }))?;
     ws_writer.write_frame(Frame::binary(Payload::Owned(bytes))).await?;
 
     // Relay lobby events to the host

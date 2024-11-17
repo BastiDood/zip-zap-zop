@@ -32,7 +32,7 @@ impl<Player> ZipZapZop<Player> {
     /// The action for the next expected message.
     pub const fn expects(&self, deadline: Timestamp) -> GameExpected {
         let Self { curr, action, .. } = *self;
-        GameExpected { curr, action, deadline }
+        GameExpected { next: curr, action, deadline }
     }
 
     pub fn winner(&self) -> Result<(usize, &Player), GameWinnerError> {

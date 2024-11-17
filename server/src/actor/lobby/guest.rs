@@ -5,8 +5,10 @@ use crate::{
         send_fn,
     },
     event::{
-        lobby::{JoinLobby, LobbyJoined, LobbyPlayerJoined, LobbyPlayerLeft, StartGame},
+        game::GameStarted,
+        lobby::{JoinLobby, LobbyJoined, LobbyPlayerJoined, LobbyPlayerLeft},
         player::{PlayerAction, PlayerResponds},
+        Event,
     },
     router::lobby::{Lobby, LobbyManager},
 };
@@ -29,11 +31,11 @@ async fn send_known_players<Writer>(
 where
     Writer: AsyncWrite + Unpin,
 {
-    let bytes = rmp_serde::to_vec(&LobbyJoined { pid, lobby }).unwrap();
+    let bytes = rmp_serde::to_vec(&Event::from(LobbyJoined { pid, lobby })).unwrap();
     ws_writer.write_frame(Frame::binary(Payload::Owned(bytes))).await?;
 
     for (pid, player) in snapshot {
-        let bytes = rmp_serde::to_vec(&LobbyPlayerJoined { pid, player }).unwrap();
+        let bytes = rmp_serde::to_vec(&Event::from(LobbyPlayerJoined { pid, player })).unwrap();
         ws_writer.write_frame(Frame::binary(Payload::Owned(bytes))).await?;
     }
 
@@ -50,7 +52,7 @@ where
     Reader: AsyncRead + Unpin,
     Writer: AsyncWrite + Unpin,
 {
-    let bytes = rmp_serde::to_vec(&StartGame { count }).unwrap();
+    let bytes = rmp_serde::to_vec(&Event::from(GameStarted { count })).unwrap();
     ws_writer.write_frame(Frame::binary(Payload::Owned(bytes))).await?;
     Ok(match ws_reader.read_frame(&mut send_fn).await? {
         Frame { fin: true, opcode: OpCode::Binary, payload, .. } => payload.is_empty(),
