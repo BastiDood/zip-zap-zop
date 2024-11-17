@@ -40,9 +40,9 @@ export interface PlayerResponds {
     action: PlayerAction;
 }
 
-export const PlayerEliminated = v.object({
-    type: v.literal('PlayerEliminated'),
+export const GameEliminated = v.object({
+    type: v.literal('GameEliminated'),
     pid: Id,
 });
 
-export type PlayerEliminated = v.InferOutput<typeof PlayerEliminated>;
+export type GameEliminated = v.InferOutput<typeof GameEliminated>;

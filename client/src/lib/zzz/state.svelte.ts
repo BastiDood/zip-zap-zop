@@ -79,7 +79,7 @@ export class State {
             case 'LobbyPlayerJoined':
                 this.players.set(event.pid, event.player);
                 break;
-            case 'PlayerEliminated':
+            case 'GameEliminated':
                 if (this.pid === event.pid) this.pid = null;
                 this.eliminated = event.pid;
             // falls through
