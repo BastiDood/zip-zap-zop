@@ -1,4 +1,4 @@
-import { GameConcluded, GameExpected, GameStarted, GameEliminated } from './game';
+import { GameConcluded, GameEliminated, GameExpected, GameStarted } from './game';
 import { LobbyCreated, LobbyJoined, LobbyPlayerJoined, LobbyPlayerLeft } from './lobby';
 
 import { type InferOutput, variant } from 'valibot';

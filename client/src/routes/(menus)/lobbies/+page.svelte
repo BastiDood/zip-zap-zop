@@ -1,42 +1,31 @@
 <script lang="ts">
-    import Button from '$lib/Button.svelte';
-
-    // const { lobbyName, playerCount }: { lobbyName: string; playerCount: string } = $props();
+    import Link from '$lib/components/Link.svelte';
 </script>
 
-<!-- {#snippet row()}
-    <tr>
-        <td>{lobbyName}</td>
-        <td>{playerCount}</td>
-    </tr>
-{/snippet} -->
-
 <h2 class="text-3xl">Join a lobby</h2>
-
 <table>
     <tbody>
         <tr>
             <td> Lobby 1 </td>
             <td> 5 players </td>
             <td>
-                <a href="/lobby/1"><Button content={'Join'} /></a>
+                <Link href="/lobby/1">Join</Link>
             </td>
         </tr>
         <tr>
             <td> Lobby 2 </td>
             <td> 15 players </td>
             <td>
-                <a href="/lobby/2"><Button content={'Join'} /></a>
+                <Link href="/lobby/2">Join</Link>
             </td>
         </tr>
         <tr>
             <td> Lobby 3 </td>
             <td> 2 players </td>
             <td>
-                <a href="/lobby/3"><Button content={'Join'} /></a>
+                <Link href="/lobby/3">Join</Link>
             </td>
         </tr>
     </tbody>
 </table>
-
-<a href="/create"><Button content={'+ Create a lobby'} /></a>
+<Link href="/create">Create Lobby</Link>
