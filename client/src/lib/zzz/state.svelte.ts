@@ -104,6 +104,7 @@ export class State {
             case 'GameEliminated':
                 if (this.pid === event.pid) this.pid = null;
                 this.eliminated = event.pid;
+                this.expected = null;
             // falls through
             case 'LobbyPlayerLeft':
                 this.players.delete(event.pid);
@@ -120,7 +121,6 @@ export class State {
                 this.pid = null;
                 this.lid = null;
                 this.lobby = null;
-                this.expected = null;
                 this.#ws.close();
                 break;
         }
