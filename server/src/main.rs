@@ -11,6 +11,7 @@ use triomphe::Arc;
 
 fn main() -> anyhow::Result<()> {
     let port = std::env::var("PORT")?.parse()?;
+    tracing_subscriber::fmt::init();
 
     let runtime = tokio::runtime::Builder::new_multi_thread().enable_io().enable_time().build()?;
     let signal = runtime.block_on(async {
