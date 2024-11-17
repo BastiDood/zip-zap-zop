@@ -1,19 +1,21 @@
 <script lang="ts">
     import Button from '$lib/components/Button.svelte';
     import { State } from '$lib/zzz/state.svelte';
+    import ZipZapZop from '$lib/components/ZipZapZop.svelte';
     import { validateString } from '$lib/utils/validate';
 
-    let state = $state<State | null>(null);
+    let zzz = $state<State | null>(null);
+    let isPending = $state(true);
 
     function createLobby(form: HTMLFormElement) {
         const data = new FormData(form);
         const lobby = validateString(data.get('lobby'));
         const player = validateString(data.get('player'));
-        state = State.host(lobby, player);
+        zzz = State.host(lobby, player);
     }
 </script>
 
-{#if state === null}
+{#if zzz === null}
     <form
         onsubmit={event => {
             event.preventDefault();
@@ -26,5 +28,9 @@
         <Button type="submit">Create Lobby</Button>
     </form>
 {:else}
-    <p>Good</p>
+    {#if isPending}
+        {@const disabled = zzz.lid === null || zzz.pid === null}
+        <Button {disabled} onclick={() => (isPending = false)}>Start Game</Button>
+    {/if}
+    <ZipZapZop {zzz} />
 {/if}

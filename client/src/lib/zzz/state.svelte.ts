@@ -129,7 +129,6 @@ export class State {
     /** Host: start the game. */
     start() {
         if (this.#schema !== HostEvent) throw new Error('player is not the host');
-        if (this.pid === null) throw new Error('player has not been acknowledged by the server');
         send(this.#ws, { count: BigInt(this.players.size) } satisfies StartGame);
     }
 }
