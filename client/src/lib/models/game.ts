@@ -46,6 +46,3 @@ export const PlayerEliminated = v.object({
 });
 
 export type PlayerEliminated = v.InferOutput<typeof PlayerEliminated>;
-
-export const GameEvent = v.variant('type', [GameExpected, PlayerEliminated, GameConcluded]);
-export type GameEvent = v.InferOutput<typeof GameEvent>;

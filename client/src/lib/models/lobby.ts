@@ -1,5 +1,4 @@
 import * as v from 'valibot';
-import { GameStarted } from './game';
 import { Id } from './id';
 
 export interface CreateLobby {
@@ -28,9 +27,6 @@ export type LobbyCreated = v.InferOutput<typeof LobbyCreated>;
 export type LobbyPlayerJoined = v.InferOutput<typeof LobbyPlayerJoined>;
 export type LobbyPlayerLeft = v.InferOutput<typeof LobbyPlayerLeft>;
 
-export const CreateLobbyEvent = v.variant('type', [LobbyCreated, LobbyPlayerJoined, LobbyPlayerLeft]);
-export type CreateLobbyEvent = v.InferOutput<typeof CreateLobbyEvent>;
-
 export interface JoinLobby {
     lid: Id;
     player: string;
@@ -38,10 +34,8 @@ export interface JoinLobby {
 
 export const LobbyJoined = v.object({
     type: v.literal('LobbyJoined'),
-    lid: Id,
+    lobby: v.string(),
+    pid: Id,
 });
 
 export type LobbyJoined = v.InferOutput<typeof LobbyJoined>;
-
-export const JoinLobbyEvent = v.variant('type', [LobbyJoined, LobbyPlayerJoined, LobbyPlayerLeft, GameStarted]);
-export type JoinLobbyEvent = v.InferOutput<typeof JoinLobbyEvent>;

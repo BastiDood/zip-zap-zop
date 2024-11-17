@@ -110,6 +110,8 @@ The server responds with a player ID.
 
 ```rust
 struct LobbyJoined {
+    /// Name of the lobby.
+    lobby: Box<str>,
     /// Unique identifier for the new player.
     pid: usize,
 }

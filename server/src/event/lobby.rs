@@ -21,6 +21,7 @@ pub struct JoinLobby {
 
 #[derive(Serialize)]
 pub struct LobbyJoined {
+    pub lobby: ArcStr,
     pub pid: usize,
 }
 

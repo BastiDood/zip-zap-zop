@@ -23,12 +23,13 @@ use tracing::{error, info, instrument, trace};
 async fn send_known_players<Writer>(
     ws_writer: &mut WebSocketWrite<Writer>,
     pid: usize,
+    lobby: ArcStr,
     snapshot: Slab<ArcStr>,
 ) -> Result<(), WebSocketError>
 where
     Writer: AsyncWrite + Unpin,
 {
-    let bytes = rmp_serde::to_vec(&LobbyJoined { pid }).unwrap();
+    let bytes = rmp_serde::to_vec(&LobbyJoined { pid, lobby }).unwrap();
     ws_writer.write_frame(Frame::binary(Payload::Owned(bytes))).await?;
 
     for (pid, player) in snapshot {
@@ -77,7 +78,7 @@ pub async fn guest_actor(lobbies: &Mutex<LobbyManager>, upgrade: UpgradeFut) {
     let JoinLobby { lid, player } = rmp_serde::from_slice(&payload).unwrap();
     info!(lid, %player, "player requested to join lobby");
 
-    let (mut broadcast_rx, pid, snapshot) = {
+    let (mut broadcast_rx, pid, lobby, snapshot) = {
         let mut guard = lobbies.lock().unwrap();
         let Some(Lobby { broadcast_tx, players, lobby }) = guard.lobbies.get_mut(lid) else {
             error!(lid, "lobby does not exist");
@@ -92,11 +93,11 @@ pub async fn guest_actor(lobbies: &Mutex<LobbyManager>, upgrade: UpgradeFut) {
         let count = broadcast_tx.send(LobbyPlayerJoined { pid, player }.into()).expect("lobby must still be alive");
         trace!(count, "broadcasted player joined event to receivers");
 
-        (broadcast_tx.subscribe(), pid, clone)
+        (broadcast_tx.subscribe(), pid, lobby.clone(), clone)
     };
 
     'lobby: {
-        if let Err(err) = send_known_players(&mut ws_writer, pid, snapshot).await {
+        if let Err(err) = send_known_players(&mut ws_writer, pid, lobby, snapshot).await {
             error!(?err, "websocket writer error when sending known players");
             break 'lobby;
         }
