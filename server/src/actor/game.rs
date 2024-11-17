@@ -28,7 +28,7 @@ async fn handle_game_tick<Player: Debug>(
     match zzz.winner() {
         Ok((pid, player)) => {
             info!(pid, ?player, "game concluded with winner");
-            let bytes = rmp_serde::to_vec(&Event::from(GameConcluded { pid })).unwrap().into();
+            let bytes = rmp_serde::to_vec_named(&Event::from(GameConcluded { pid })).unwrap().into();
             let count = broadcast_tx.send(bytes).map_err(|SendError(bytes)| bytes)?;
             trace!(count, "broadcasted game event");
             return Ok(false);
@@ -45,7 +45,7 @@ async fn handle_game_tick<Player: Debug>(
     let deadline = Timestamp::now().saturating_add(duration);
 
     let expects = zzz.expects(deadline);
-    let bytes = rmp_serde::to_vec(&Event::from(expects)).unwrap().into();
+    let bytes = rmp_serde::to_vec_named(&Event::from(expects)).unwrap().into();
     let count = broadcast_tx.send(bytes).map_err(|SendError(bytes)| bytes)?;
     trace!(count, "broadcasted game event");
 
@@ -78,7 +78,7 @@ async fn handle_game_tick<Player: Debug>(
                 break;
             }
             TickResult::Eliminated(player) => {
-                let bytes = rmp_serde::to_vec(&Event::from(GameEliminated { pid })).unwrap().into();
+                let bytes = rmp_serde::to_vec_named(&Event::from(GameEliminated { pid })).unwrap().into();
                 let count = broadcast_tx.send(bytes).map_err(|SendError(bytes)| bytes)?;
                 trace!(count, "broadcasted game event");
                 info!(?player, "player eliminated");

@@ -31,11 +31,11 @@ async fn send_known_players<Writer>(
 where
     Writer: AsyncWrite + Unpin,
 {
-    let bytes = rmp_serde::to_vec(&Event::from(LobbyJoined { pid, lobby })).unwrap();
+    let bytes = rmp_serde::to_vec_named(&Event::from(LobbyJoined { pid, lobby })).unwrap();
     ws_writer.write_frame(Frame::binary(Payload::Owned(bytes))).await?;
 
     for (pid, player) in snapshot {
-        let bytes = rmp_serde::to_vec(&Event::from(LobbyPlayerJoined { pid, player })).unwrap();
+        let bytes = rmp_serde::to_vec_named(&Event::from(LobbyPlayerJoined { pid, player })).unwrap();
         ws_writer.write_frame(Frame::binary(Payload::Owned(bytes))).await?;
     }
 
@@ -52,7 +52,7 @@ where
     Reader: AsyncRead + Unpin,
     Writer: AsyncWrite + Unpin,
 {
-    let bytes = rmp_serde::to_vec(&Event::from(GameStarted { count })).unwrap();
+    let bytes = rmp_serde::to_vec_named(&Event::from(GameStarted { count })).unwrap();
     ws_writer.write_frame(Frame::binary(Payload::Owned(bytes))).await?;
     Ok(match ws_reader.read_frame(&mut send_fn).await? {
         Frame { fin: true, opcode: OpCode::Binary, payload, .. } => payload.is_empty(),
