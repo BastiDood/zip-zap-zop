@@ -38,21 +38,19 @@
         </ul>
     {:else}
         {@const target = zzz.players.get(zzz.expected.pid) ?? zzz.player}
-        {#if typeof target !== 'undefined'}
+        {#if target != null}
             <p><strong>{prevPlayerAction(zzz.expected.action)}</strong>! What's next, <strong>{target}</strong>?</p>
         {/if}
+        <!-- TODO: Add Controls -->
         {#if zzz.eliminated === null}
             <p>Nobody has been eliminated yet.</p>
         {:else}
-            {@const eliminated = zzz.players.get(zzz.eliminated) ?? zzz.player}
-            {#if typeof eliminated !== 'undefined'}
-                <p><strong>{eliminated}</strong> has been eliminated.</p>
-            {/if}
+            <p><strong>{zzz.eliminated}</strong> has been eliminated.</p>
         {/if}
     {/if}
 {:else}
     {@const winner = zzz.players.get(zzz.winner) ?? zzz.player}
-    {#if typeof winner !== 'undefined'}
+    {#if winner !== null}
         <p>Congratulations to <strong>{winner}</strong>!</p>
     {/if}
 {/if}

@@ -1,6 +1,6 @@
 import type { CreateLobby, JoinLobby } from '$lib/models/lobby';
 import { GameEvent, GuestEvent, HostEvent } from '$lib/models';
-import type { GameExpected, StartGame } from '$lib/models/game';
+import type { GameExpected, PlayerAction, PlayerResponds, StartGame } from '$lib/models/game';
 import type { Id } from '$lib/models/id';
 
 import { decode, encode } from '@msgpack/msgpack';
@@ -22,7 +22,7 @@ export class State {
     /** The last expected response by the server. */
     expected = $state<GameExpected | null>(null);
     /** The latest player eliminated from the game. */
-    eliminated = $state<Id | null>(null);
+    eliminated = $state<string | null>(null);
     /** Player ID of the game winner. */
     winner = $state<Id | null>(null);
 
@@ -108,7 +108,7 @@ export class State {
                 break;
             case 'GameEliminated':
                 if (this.pid === event.pid) this.pid = null;
-                this.eliminated = event.pid;
+                this.eliminated = this.players.get(event.pid) ?? this.player;
                 this.expected = null;
             // falls through
             case 'LobbyPlayerLeft':
@@ -135,5 +135,11 @@ export class State {
     start() {
         if (this.#schema !== HostEvent) throw new Error('player is not the host');
         send(this.#ws, { count: BigInt(this.players.size + 1) } satisfies StartGame);
+    }
+
+    respond(next: Id, action: PlayerAction) {
+        if (this.#schema !== GameEvent) throw new Error('game has not yet started');
+        if (this.pid === null) throw new Error('player is no longer in the game');
+        send(this.#ws, { next, action } satisfies PlayerResponds);
     }
 }
