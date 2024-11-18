@@ -7,7 +7,7 @@ export interface StartGame {
 
 export const GameStarted = v.object({
     type: v.literal('GameStarted'),
-    count: v.bigint(),
+    count: v.pipe(v.number(), v.safeInteger()),
 });
 
 export const enum PlayerAction {

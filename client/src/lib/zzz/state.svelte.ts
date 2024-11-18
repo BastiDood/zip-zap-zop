@@ -92,8 +92,8 @@ export class State {
     }
 
     #tick(data: unknown) {
+        console.log(data);
         const event = parse(this.#schema, data);
-        console.log(event);
         switch (event.type) {
             case 'LobbyCreated':
                 this.lid = event.lid;
@@ -115,7 +115,7 @@ export class State {
                 this.players.delete(event.pid);
                 break;
             case 'GameStarted':
-                if (BigInt(this.players.size + 1) !== event.count) throw new Error('player count mismatch');
+                if (this.players.size + 1 !== event.count) throw new Error('player count mismatch');
                 this.#schema = GameEvent;
                 break;
             case 'GameExpected':
