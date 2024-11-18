@@ -6,6 +6,7 @@ use crate::{
         send_fn,
     },
     event::{
+        game::GameStarted,
         lobby::{CreateLobby, LobbyCreated, StartGame},
         player::PlayerResponds,
         Event,
@@ -40,6 +41,9 @@ where
             .expect("host websocket connection failed")
             .expect("origin lobby was prematurely closed");
     trace!(count, "game start command received with player count");
+
+    let bytes = rmp_serde::to_vec_named(&Event::from(GameStarted { count })).unwrap();
+    ws_writer.write_frame(Frame::binary(Payload::Owned(bytes))).await.expect("host websocket writer failed");
 
     // Signal to the lobby that this player is ready
     info!("player is ready");

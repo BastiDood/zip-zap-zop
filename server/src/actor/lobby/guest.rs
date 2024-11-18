@@ -81,6 +81,7 @@ pub async fn guest_actor(lobbies: &Mutex<LobbyManager>, upgrade: UpgradeFut) {
     info!(lid, %player, "player requested to join lobby");
 
     let (mut broadcast_rx, pid, lobby, snapshot) = {
+        // TODO: Gracefully handle panics here.
         let mut guard = lobbies.lock().unwrap();
         let Some(Lobby { broadcast_tx, players, lobby }) = guard.lobbies.get_mut(lid) else {
             error!(lid, "lobby does not exist");
