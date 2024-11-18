@@ -26,22 +26,26 @@ export class State {
     /** Player ID of the game winner. */
     winner = $state<Id | null>(null);
 
-    /** Player ID */
-    pid = $state<Id | null>(null);
     /** Lobby ID */
     lid = $state<Id | null>(null);
     /** Lobby name. */
     lobby = $state<string | null>(null);
 
-    private constructor(ws: WebSocket, schema: typeof GuestEvent | typeof HostEvent) {
+    /** Player ID */
+    pid = $state<Id | null>(null);
+    /** Player name. */
+    player = $state<string | null>(null);
+
+    private constructor(ws: WebSocket, schema: typeof GuestEvent | typeof HostEvent, player: string) {
         ws.binaryType = 'arraybuffer';
         this.#ws = ws;
         this.#schema = schema;
+        this.player = player;
     }
 
     /** Start the state machine as a lobby "host". */
     static host(lobby: string, player: string) {
-        const state = new State(new WebSocket(new URL('create', ZZZ_WEBSOCKET_BASE_URL)), HostEvent);
+        const state = new State(new WebSocket(new URL('create', ZZZ_WEBSOCKET_BASE_URL)), HostEvent, player);
         state.lobby = lobby;
         state.#ws.addEventListener(
             'open',
@@ -65,7 +69,7 @@ export class State {
 
     /** Start the state machine as a lobby "guest". */
     static guest(lid: Id, player: string) {
-        const state = new State(new WebSocket(new URL('join', ZZZ_WEBSOCKET_BASE_URL)), GuestEvent);
+        const state = new State(new WebSocket(new URL('join', ZZZ_WEBSOCKET_BASE_URL)), GuestEvent, player);
         state.lid = lid;
         state.#ws.addEventListener(
             'open',
@@ -89,6 +93,7 @@ export class State {
 
     #tick(data: unknown) {
         const event = parse(this.#schema, data);
+        console.log(event);
         switch (event.type) {
             case 'LobbyCreated':
                 this.lid = event.lid;

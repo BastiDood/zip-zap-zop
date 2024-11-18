@@ -10,7 +10,7 @@ export const GameStarted = v.object({
     count: v.bigint(),
 });
 
-const enum PlayerAction {
+export const enum PlayerAction {
     Zip = 0,
     Zap,
     Zop,

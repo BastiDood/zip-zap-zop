@@ -13,6 +13,11 @@
         const player = validateString(data.get('player'));
         zzz = State.host(lobby, player);
     }
+
+    function startGame(zzz: State) {
+        isPending = false;
+        zzz.start();
+    }
 </script>
 
 {#if zzz === null}
@@ -30,7 +35,7 @@
 {:else}
     {#if isPending}
         {@const disabled = zzz.lid === null || zzz.pid === null}
-        <Button {disabled} onclick={() => (isPending = false)}>Start Game</Button>
+        <Button {disabled} onclick={startGame.bind(null, zzz)}>Start Game</Button>
     {/if}
     <ZipZapZop {zzz} />
 {/if}
