@@ -18,9 +18,9 @@ where
 {
     use broadcast::error::RecvError;
     Ok(loop {
-        let bytes = match broadcast_rx.recv().await {
-            Ok(LobbyEvent::PlayerJoined(event)) => rmp_serde::to_vec_named(&Event::from(event)).unwrap(),
-            Ok(LobbyEvent::PlayerLeft(event)) => rmp_serde::to_vec_named(&Event::from(event)).unwrap(),
+        let event = match broadcast_rx.recv().await {
+            Ok(LobbyEvent::PlayerJoined(event)) => Event::from(event),
+            Ok(LobbyEvent::PlayerLeft(event)) => Event::from(event),
             Ok(LobbyEvent::Start(event)) => {
                 info!("game start notification received");
                 break Some(event);
@@ -34,6 +34,7 @@ where
                 break None;
             }
         };
+        let bytes = rmp_serde::to_vec_named(&event).unwrap();
         ws_writer.write_frame(Frame::binary(Payload::Owned(bytes))).await?;
     })
 }
