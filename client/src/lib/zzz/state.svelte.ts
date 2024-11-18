@@ -115,7 +115,7 @@ export class State {
                 this.players.delete(event.pid);
                 break;
             case 'GameStarted':
-                if (BigInt(this.players.size) !== event.count) throw new Error('player count mismatch');
+                if (BigInt(this.players.size + 1) !== event.count) throw new Error('player count mismatch');
                 this.#schema = GameEvent;
                 break;
             case 'GameExpected':
@@ -134,6 +134,6 @@ export class State {
     /** Host: start the game. */
     start() {
         if (this.#schema !== HostEvent) throw new Error('player is not the host');
-        send(this.#ws, { count: BigInt(this.players.size) } satisfies StartGame);
+        send(this.#ws, { count: BigInt(this.players.size + 1) } satisfies StartGame);
     }
 }
