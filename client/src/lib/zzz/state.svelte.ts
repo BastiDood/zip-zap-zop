@@ -116,6 +116,7 @@ export class State {
                 break;
             case 'GameStarted':
                 if (this.players.size + 1 !== event.count) throw new Error('player count mismatch');
+                if (this.#schema === GuestEvent) this.#ws.send(new ArrayBuffer(0));
                 this.#schema = GameEvent;
                 break;
             case 'GameExpected':
