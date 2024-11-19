@@ -123,10 +123,10 @@ pub async fn host_actor(lobbies: &Mutex<LobbyManager>, upgrade: UpgradeFut, broa
         return;
     }
 
-    // TODO: Let's more cleverly depend on the player count for the channel capacity.
-    let (broadcast_tx, broadcast_rx) = broadcast::channel(count);
+    // TODO: Is this too much capacity for the broadcast channel?
+    let (broadcast_tx, broadcast_rx) = broadcast::channel(count * 4);
     let (event_tx, mut event_rx) = mpsc::channel(count);
-    let (ready_tx, mut ready_rx) = mpsc::channel(count);
+    let (ready_tx, mut ready_rx) = mpsc::channel(1);
 
     match start_tx.send(LobbyStart { ready_tx, event_tx, broadcast_rx, count }.into()) {
         Ok(count) => info!(count, "dispatched game start to listeners"),
