@@ -38,7 +38,7 @@
         </ul>
     {:else}
         {@const disabled = zzz.pid === null}
-        {@const target = zzz.players.get(zzz.expected.pid) ?? zzz.player}
+        {@const target = zzz.players.get(zzz.expected.next) ?? zzz.player}
         {#if target !== null}
             <p><strong>{prevPlayerAction(zzz.expected.action)}</strong>! What's next, <strong>{target}</strong>?</p>
         {/if}

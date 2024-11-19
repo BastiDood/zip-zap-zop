@@ -18,7 +18,7 @@ export const enum PlayerAction {
 
 export const GameExpected = v.object({
     type: v.literal('GameExpected'),
-    pid: Id,
+    next: Id,
     action: v.picklist([PlayerAction.Zip, PlayerAction.Zap, PlayerAction.Zop]),
     deadline: v.pipe(
         v.string(),
