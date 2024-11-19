@@ -141,6 +141,6 @@ export class State {
     respond(next: Id, action: PlayerAction) {
         if (this.#schema !== GameEvent) throw new Error('game has not yet started');
         if (this.pid === null) throw new Error('player is no longer in the game');
-        send(this.#ws, { next, action } satisfies PlayerResponds);
+        send(this.#ws, { pid: this.pid, next, action } satisfies PlayerResponds);
     }
 }
