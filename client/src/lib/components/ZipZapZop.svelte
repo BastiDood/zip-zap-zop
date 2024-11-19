@@ -37,16 +37,42 @@
             {/each}
         </ul>
     {:else}
+        {@const disabled = zzz.pid === null}
         {@const target = zzz.players.get(zzz.expected.pid) ?? zzz.player}
         {#if target !== null}
             <p><strong>{prevPlayerAction(zzz.expected.action)}</strong>! What's next, <strong>{target}</strong>?</p>
         {/if}
-        <!-- TODO: Add Controls -->
         {#if zzz.eliminated === null}
             <p>Nobody has been eliminated yet.</p>
         {:else}
             <p><strong>{zzz.eliminated}</strong> has been eliminated.</p>
         {/if}
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Controls</th>
+                </tr>
+            </thead>
+            <tbody>
+                {#each zzz.players as [pid, player] (pid)}
+                    <tr>
+                        <td><strong>{player}</strong></td>
+                        <td>
+                            <button type="button" {disabled} onclick={() => zzz.respond(pid, PlayerAction.Zip)}
+                                >Zip</button
+                            >
+                            <button type="button" {disabled} onclick={() => zzz.respond(pid, PlayerAction.Zap)}
+                                >Zap</button
+                            >
+                            <button type="button" {disabled} onclick={() => zzz.respond(pid, PlayerAction.Zop)}
+                                >Zop</button
+                            >
+                        </td>
+                    </tr>
+                {/each}
+            </tbody>
+        </table>
     {/if}
 {:else}
     {@const winner = zzz.players.get(zzz.winner) ?? zzz.player}
