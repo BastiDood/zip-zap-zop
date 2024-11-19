@@ -1,5 +1,5 @@
 <script>
-    import Link from '$lib/components/Link.svelte';
+    import Link from '$lib/components/ui/Link.svelte';
 </script>
 
 <div class="flex flex-col items-center gap-2">

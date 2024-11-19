@@ -1,4 +1,5 @@
 <script lang="ts">
+    import Deadline from './Deadline.svelte';
     import { PlayerAction } from '$lib/models/game';
     import type { State } from '$lib/zzz/state.svelte';
 
@@ -47,6 +48,9 @@
         {:else}
             <p><strong>{zzz.eliminated}</strong> has been eliminated.</p>
         {/if}
+        {#key zzz.expected.deadline}
+            <Deadline deadline={zzz.expected.deadline} />
+        {/key}
         <table>
             <thead>
                 <tr>

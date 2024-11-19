@@ -1,7 +1,8 @@
 <script lang="ts">
-    import Button from '$lib/components/Button.svelte';
+    import Button from '$lib/components/ui/Button.svelte';
+    import Deadline from '$lib/components/zzz/Deadline.svelte';
     import { State } from '$lib/zzz/state.svelte';
-    import ZipZapZop from '$lib/components/ZipZapZop.svelte';
+    import ZipZapZop from '$lib/components/zzz/ZipZapZop.svelte';
     import { validateString } from '$lib/utils/validate';
 
     let zzz = $state<State | null>(null);
