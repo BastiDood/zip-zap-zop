@@ -26,7 +26,7 @@ pub struct ZipZapZop<Player> {
 
 impl<Player> ZipZapZop<Player> {
     pub const fn new(players: Slab<Player>, curr: usize) -> Self {
-        Self { players, curr, action: PlayerAction::Zop }
+        Self { players, curr, action: PlayerAction::Zip }
     }
 
     /// The action for the next expected message.
