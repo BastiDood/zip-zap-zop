@@ -11,9 +11,9 @@ export const GameStarted = v.object({
 });
 
 export const enum PlayerAction {
-    Zip = 0,
-    Zap,
-    Zop,
+    Zip = 'Zip',
+    Zap = 'Zap',
+    Zop = 'Zop',
 }
 
 export const GameExpected = v.object({
