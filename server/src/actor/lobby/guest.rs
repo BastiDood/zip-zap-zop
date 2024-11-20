@@ -81,7 +81,6 @@ pub async fn guest_actor(lobbies: &Mutex<LobbyManager>, upgrade: UpgradeFut) {
     info!(lid, %player, "player requested to join lobby");
 
     let (mut broadcast_rx, pid, lobby, snapshot) = {
-        // TODO: Gracefully handle panics here.
         let mut guard = lobbies.lock().unwrap();
         let Some(Lobby { broadcast_tx, players, lobby }) = guard.lobbies.get_mut(lid) else {
             error!(lid, "lobby does not exist");
@@ -89,12 +88,16 @@ pub async fn guest_actor(lobbies: &Mutex<LobbyManager>, upgrade: UpgradeFut) {
         };
 
         trace!(%lobby, "lobby found for guest");
-
         let clone = players.clone();
         let pid = players.insert(player.clone());
 
-        let count = broadcast_tx.send(LobbyPlayerJoined { pid, player }.into()).expect("lobby must still be alive");
-        trace!(count, "broadcasted player joined event to receivers");
+        match broadcast_tx.send(LobbyPlayerJoined { pid, player }.into()) {
+            Ok(count) => trace!(count, "broadcasted player joined event to receivers"),
+            Err(event) => {
+                error!(?event, "lobby has already expired");
+                return;
+            }
+        }
 
         (broadcast_tx.subscribe(), pid, lobby.clone(), clone)
     };
@@ -152,14 +155,17 @@ pub async fn guest_actor(lobbies: &Mutex<LobbyManager>, upgrade: UpgradeFut) {
     // Gracefully disconnect player from the lobby with notification.
     {
         let mut guard = lobbies.lock().unwrap();
-        let Lobby { broadcast_tx, players, lobby } = guard.lobbies.get_mut(lid).expect("lobby must still exist");
+        let Some(Lobby { broadcast_tx, players, lobby }) = guard.lobbies.get_mut(lid) else {
+            error!("lobby has already expired");
+            return;
+        };
 
         let player = players.remove(pid);
         info!(%lobby, %player, "player has prematurely left the lobby");
 
-        let count = broadcast_tx
-            .send(LobbyPlayerLeft { pid }.into())
-            .expect("lobby event broadcast channel must still be alive");
-        trace!(count, "broadcasted player leave event to receivers");
+        match broadcast_tx.send(LobbyPlayerLeft { pid }.into()) {
+            Ok(count) => trace!(count, "broadcasted player leave event to receivers"),
+            Err(event) => error!(?event, "lobby has already been dissolved"),
+        }
     }
 }
