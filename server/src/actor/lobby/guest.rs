@@ -7,7 +7,7 @@ use crate::{
     event::{
         game::GameStarted,
         lobby::{JoinLobby, LobbyJoined, LobbyPlayerJoined, LobbyPlayerLeft},
-        player::{PlayerAction, PlayerResponds},
+        player::{PlayerAction, PlayerResponds, PlayerRespondsWithId},
         Event,
     },
     router::lobby::{Lobby, LobbyManager},
@@ -143,7 +143,7 @@ pub async fn guest_actor(lobbies: &Mutex<LobbyManager>, upgrade: UpgradeFut) {
 
         // Announce graceful self-elimination of player.
         event_tx
-            .send(PlayerResponds { pid, next: pid, action: PlayerAction::Zip })
+            .send(PlayerRespondsWithId { pid, data: PlayerResponds { next: pid, action: PlayerAction::Zip } })
             .await
             .expect("game must still exist");
         return;

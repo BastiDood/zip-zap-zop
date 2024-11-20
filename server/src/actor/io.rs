@@ -1,6 +1,6 @@
 use crate::{
     actor::send_fn,
-    event::player::{PlayerAction, PlayerResponds},
+    event::player::{PlayerAction, PlayerResponds, PlayerRespondsWithId},
 };
 use fastwebsockets::{FragmentCollectorRead, Frame, OpCode, Payload, WebSocketWrite};
 use tokio::{
@@ -16,7 +16,7 @@ use triomphe::Arc;
 #[instrument(skip(event_tx, ws_reader))]
 pub async fn websocket_msgpack_to_event_actor<Reader>(
     ws_reader: &mut FragmentCollectorRead<Reader>,
-    event_tx: &Sender<PlayerResponds>,
+    event_tx: &Sender<PlayerRespondsWithId>,
     pid: usize,
 ) where
     Reader: AsyncRead + Unpin,
@@ -34,7 +34,7 @@ pub async fn websocket_msgpack_to_event_actor<Reader>(
             }
         };
 
-        let event = match rmp_serde::from_slice(&payload) {
+        let data = match rmp_serde::from_slice(&payload) {
             Ok(event) => event,
             Err(err) => {
                 error!(?err, "cannot deserialize payload");
@@ -42,7 +42,7 @@ pub async fn websocket_msgpack_to_event_actor<Reader>(
             }
         };
 
-        if let Err(SendError(event)) = event_tx.send(event).await {
+        if let Err(SendError(event)) = event_tx.send(PlayerRespondsWithId { pid, data }).await {
             warn!(?event, "lobby has already shut down");
             return;
         }
@@ -50,7 +50,7 @@ pub async fn websocket_msgpack_to_event_actor<Reader>(
 
     // Gracefully eliminate self from the lobby
     event_tx
-        .send(PlayerResponds { pid, next: pid, action: PlayerAction::Zip })
+        .send(PlayerRespondsWithId { pid, data: PlayerResponds { next: pid, action: PlayerAction::Zip } })
         .await
         .expect("actor must outlive lobby");
 }

@@ -36,7 +36,6 @@ export type GameExpected = v.InferOutput<typeof GameExpected>;
 export type GameConcluded = v.InferOutput<typeof GameConcluded>;
 
 export interface PlayerResponds {
-    pid: Id;
     next: Id;
     action: PlayerAction;
 }

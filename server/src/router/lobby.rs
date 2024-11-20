@@ -1,6 +1,6 @@
 use crate::event::{
     lobby::{LobbyPlayerJoined, LobbyPlayerLeft},
-    player::PlayerResponds,
+    player::PlayerRespondsWithId,
 };
 use arcstr::ArcStr;
 use core::convert::Infallible;
@@ -11,7 +11,7 @@ use triomphe::Arc;
 #[derive(Debug)]
 pub struct LobbyStart {
     pub ready_tx: mpsc::Sender<Infallible>,
-    pub event_tx: mpsc::Sender<PlayerResponds>,
+    pub event_tx: mpsc::Sender<PlayerRespondsWithId>,
     pub broadcast_rx: broadcast::Receiver<Arc<[u8]>>,
     /// Number of known players in the game.
     pub count: usize,

@@ -19,9 +19,13 @@ impl PlayerAction {
 
 #[derive(Debug, Deserialize)]
 pub struct PlayerResponds {
-    /// ID of the player who responded.
-    pub pid: usize,
     /// The targeted next player in the game.
     pub next: usize,
     pub action: PlayerAction,
+}
+
+#[derive(Debug)]
+pub struct PlayerRespondsWithId {
+    pub pid: usize,
+    pub data: PlayerResponds,
 }

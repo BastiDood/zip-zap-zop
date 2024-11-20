@@ -3,7 +3,7 @@ mod tests;
 
 use crate::event::{
     game::GameExpected,
-    player::{PlayerAction, PlayerResponds},
+    player::{PlayerAction, PlayerResponds, PlayerRespondsWithId},
 };
 use core::fmt::Debug;
 use jiff::Timestamp;
@@ -63,7 +63,10 @@ impl<Player: Debug> ZipZapZop<Player> {
     /// * If the `player` is not the expected sender, they will be eliminated.
     /// * If the `player` is equal to `next`, `player` will be gracefully eliminated.
     #[instrument]
-    pub fn tick(&mut self, PlayerResponds { pid, next, action }: PlayerResponds) -> TickResult<Player> {
+    pub fn tick(
+        &mut self,
+        PlayerRespondsWithId { pid, data: PlayerResponds { next, action } }: PlayerRespondsWithId,
+    ) -> TickResult<Player> {
         if !self.players.contains(pid) {
             warn!("player does not exist in the game");
             return TickResult::NoOp;

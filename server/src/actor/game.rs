@@ -1,7 +1,7 @@
 use crate::{
     event::{
         game::{GameConcluded, GameEliminated, GameExpected},
-        player::PlayerResponds,
+        player::{PlayerResponds, PlayerRespondsWithId},
         Event,
     },
     zzz::{GameWinnerError, TickResult, ZipZapZop},
@@ -21,7 +21,7 @@ use triomphe::Arc;
 #[instrument(skip(broadcast_tx, event_rx))]
 async fn handle_game_tick<Player: Debug>(
     broadcast_tx: &Sender<Arc<[u8]>>,
-    event_rx: &mut Receiver<PlayerResponds>,
+    event_rx: &mut Receiver<PlayerRespondsWithId>,
     zzz: &mut ZipZapZop<Player>,
     round: &mut u32,
 ) -> Result<bool, Arc<[u8]>> {
@@ -59,7 +59,7 @@ async fn handle_game_tick<Player: Debug>(
             Err(err) => {
                 warn!(?err, "round timeout elapsed - gracefully eliminating current player");
                 let GameExpected { next, action, .. } = expects;
-                PlayerResponds { pid: next, next, action }
+                PlayerRespondsWithId { pid: next, data: PlayerResponds { next, action } }
             }
         };
 
@@ -93,7 +93,7 @@ async fn handle_game_tick<Player: Debug>(
 
 #[instrument(skip(broadcast_tx, event_rx, zzz))]
 pub async fn handle_game<Player: Debug>(
-    event_rx: &mut Receiver<PlayerResponds>,
+    event_rx: &mut Receiver<PlayerRespondsWithId>,
     broadcast_tx: &Sender<Arc<[u8]>>,
     zzz: &mut ZipZapZop<Player>,
 ) {

@@ -8,7 +8,7 @@ use crate::{
     event::{
         game::GameStarted,
         lobby::{CreateLobby, LobbyCreated, StartGame},
-        player::PlayerResponds,
+        player::PlayerRespondsWithId,
         Event,
     },
     router::lobby::{Lobby, LobbyManager},
@@ -31,7 +31,7 @@ async fn detach_host<Writer>(
     mut ws_writer: WebSocketWrite<Writer>,
     mut broadcast_rx: broadcast::Receiver<LobbyEvent>,
     pid: usize,
-) -> mpsc::Sender<PlayerResponds>
+) -> mpsc::Sender<PlayerRespondsWithId>
 where
     Writer: AsyncWrite + Send + Unpin + 'static,
 {
@@ -61,7 +61,7 @@ async fn detach_host_while_waiting_for_start_command<Reader, Writer>(
     broadcast_rx: broadcast::Receiver<LobbyEvent>,
     lid: usize,
     pid: usize,
-) -> anyhow::Result<(usize, JoinHandle<mpsc::Sender<PlayerResponds>>)>
+) -> anyhow::Result<(usize, JoinHandle<mpsc::Sender<PlayerRespondsWithId>>)>
 where
     Reader: AsyncRead + Unpin,
     Writer: AsyncWrite + Unpin + Send + 'static,
