@@ -10,7 +10,7 @@ use tokio::{
         mpsc::{error::SendError, Sender},
     },
 };
-use tracing::{error, info, instrument, warn};
+use tracing::{error, info, instrument, trace, warn};
 use triomphe::Arc;
 
 #[instrument(skip(event_tx, ws_reader))]
@@ -83,6 +83,6 @@ pub async fn event_to_websocket_msgpack_actor<Writer>(
             break;
         }
 
-        info!("delivered incoming event to the websocket");
+        trace!("delivered incoming event to the websocket");
     }
 }
