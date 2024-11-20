@@ -12,11 +12,22 @@
     function prevPlayerAction(action: PlayerAction) {
         switch (action) {
             case PlayerAction.Zip:
-                return 'Zop';
+                return PlayerAction.Zop;
             case PlayerAction.Zap:
-                return 'Zip';
+                return PlayerAction.Zip;
             case PlayerAction.Zop:
-                return 'Zap';
+                return PlayerAction.Zap;
+        }
+    }
+
+    function alertClasses(action: PlayerAction) {
+        switch (action) {
+            case PlayerAction.Zip:
+                return ['alert-info', 'text-info-content'] as const;
+            case PlayerAction.Zap:
+                return ['alert-success', 'text-success-content'] as const;
+            case PlayerAction.Zop:
+                return ['alert-warning', 'text-warning-content'] as const;
         }
     }
 </script>
@@ -54,11 +65,10 @@
         {@const disabled = zzz.pid === null}
         {@const target = zzz.players.get(zzz.expected.next) ?? zzz.player}
         {#if target !== null}
-            <div role="alert" class="alert alert-info text-info-content shadow-sm">
-                <span
-                    ><strong>{prevPlayerAction(zzz.expected.action)}</strong>! What's next,
-                    <strong>{target}</strong>?</span
-                >
+            {@const prev = prevPlayerAction(zzz.expected.action)}
+            {@const [alert, text] = alertClasses(prev)}
+            <div role="alert" class="alert {alert} {text} shadow-sm">
+                <span><strong>{prev}</strong>! What's next, <strong>{target}</strong>?</span>
             </div>
         {/if}
         {#if zzz.eliminated === null}
@@ -88,19 +98,19 @@
                                     type="button"
                                     {disabled}
                                     onclick={() => zzz.respond(pid, PlayerAction.Zip)}
-                                    class="btn btn-primary btn-xs">Zip</button
+                                    class="btn btn-info btn-sm">Zip</button
                                 >
                                 <button
                                     type="button"
                                     {disabled}
                                     onclick={() => zzz.respond(pid, PlayerAction.Zap)}
-                                    class="btn btn-secondary btn-xs">Zap</button
+                                    class="btn btn-success btn-sm">Zap</button
                                 >
                                 <button
                                     type="button"
                                     {disabled}
                                     onclick={() => zzz.respond(pid, PlayerAction.Zop)}
-                                    class="btn btn-accent btn-xs">Zop</button
+                                    class="btn btn-warning btn-sm">Zop</button
                                 >
                             </td>
                         </tr>
