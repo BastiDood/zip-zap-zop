@@ -49,10 +49,12 @@ pub async fn websocket_msgpack_to_event_actor<Reader>(
     }
 
     // Gracefully eliminate self from the lobby
-    event_tx
-        .send(PlayerRespondsWithId { pid, data: PlayerResponds { next: pid, action: PlayerAction::Zip } })
-        .await
-        .expect("actor must outlive lobby");
+    if let Err(SendError(event)) =
+        event_tx.send(PlayerRespondsWithId { pid, data: PlayerResponds { next: pid, action: PlayerAction::Zip } }).await
+    {
+        error!(?event, "lobby has already shut down");
+        return;
+    }
 }
 
 #[instrument(skip(event_rx, ws_writer))]
