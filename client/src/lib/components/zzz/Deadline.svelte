@@ -28,9 +28,9 @@
 </script>
 
 {#if typeof progress === 'undefined'}
-    <progress></progress>
+    <progress class="progress progress-warning"></progress>
 {:else}
     {@const max = Math.max(0, end - progress.min)}
     {@const value = progress.value - progress.min}
-    <progress {max} {value}></progress>
+    <progress {max} {value} class="progress progress-warning"></progress>
 {/if}

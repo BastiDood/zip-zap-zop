@@ -41,9 +41,13 @@
         </div>
     </form>
 {:else}
-    {#if isPending}
-        {@const disabled = zzz.lid === null || zzz.pid === null}
-        <button type="button" {disabled} onclick={startGame.bind(null, zzz)} class="btn btn-success">Start Game</button>
-    {/if}
-    <ZipZapZop {zzz} />
+    <main class="m-4 space-y-4">
+        <ZipZapZop {zzz} />
+        {#if isPending}
+            {@const disabled = zzz.lid === null || zzz.pid === null}
+            <button type="button" {disabled} onclick={startGame.bind(null, zzz)} class="btn btn-success"
+                >Start Game</button
+            >
+        {/if}
+    </main>
 {/if}
