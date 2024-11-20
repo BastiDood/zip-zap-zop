@@ -1,6 +1,4 @@
 <script lang="ts">
-    import Button from '$lib/components/ui/Button.svelte';
-    import Deadline from '$lib/components/zzz/Deadline.svelte';
     import { State } from '$lib/zzz/state.svelte';
     import ZipZapZop from '$lib/components/zzz/ZipZapZop.svelte';
     import { validateString } from '$lib/utils/validate';
@@ -28,15 +26,24 @@
             event.stopPropagation();
             createLobby(event.currentTarget);
         }}
+        class="card m-8 mx-auto max-w-lg shadow-xl"
     >
-        <input type="text" required name="lobby" placeholder="Lobby Name" />
-        <input type="text" required name="player" placeholder="Player Name" />
-        <Button type="submit">Create Lobby</Button>
+        <div class="card-body">
+            <label class="form-control w-full">
+                <div class="label"><span class="label-text">Lobby Name</span></div>
+                <input type="text" required name="lobby" placeholder="My Lobby" class="input input-bordered w-full" />
+            </label>
+            <label class="form-control w-full">
+                <div class="label"><span class="label-text">Player Name</span></div>
+                <input type="text" required name="player" placeholder="Lino" class="input input-bordered w-full" />
+            </label>
+            <button type="submit" class="btn btn-primary mt-4">Create Lobby</button>
+        </div>
     </form>
 {:else}
     {#if isPending}
         {@const disabled = zzz.lid === null || zzz.pid === null}
-        <Button {disabled} onclick={startGame.bind(null, zzz)}>Start Game</Button>
+        <button type="button" {disabled} onclick={startGame.bind(null, zzz)} class="btn btn-success">Start Game</button>
     {/if}
     <ZipZapZop {zzz} />
 {/if}

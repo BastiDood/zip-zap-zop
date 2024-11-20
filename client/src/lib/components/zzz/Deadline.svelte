@@ -22,7 +22,9 @@
         else requestAnimationFrame(tick);
     }
 
-    $effect(() => void requestAnimationFrame(tick));
+    $effect(() => {
+        requestAnimationFrame(tick);
+    });
 </script>
 
 {#if typeof progress === 'undefined'}

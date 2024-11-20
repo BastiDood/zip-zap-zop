@@ -21,7 +21,7 @@ export default tsEslint.config(
         },
     },
     {
-        languageOptions: { globals: { ...globals.browser, ...globals.node } },
+        languageOptions: { globals: { ...globals.browser, ...globals.node, DOMHighResTimeStamp: true } },
         rules: {
             '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
             'no-constant-binary-expression': 'error',

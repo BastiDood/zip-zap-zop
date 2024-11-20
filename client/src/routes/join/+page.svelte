@@ -1,5 +1,4 @@
 <script lang="ts">
-    import Button from '$lib/components/ui/Button.svelte';
     import { State } from '$lib/zzz/state.svelte';
     import ZipZapZop from '$lib/components/zzz/ZipZapZop.svelte';
     import { validateString } from '$lib/utils/validate';
@@ -21,10 +20,19 @@
             event.stopPropagation();
             joinLobby(event.currentTarget);
         }}
+        class="card m-8 mx-auto max-w-lg shadow-xl"
     >
-        <input type="number" required name="lid" placeholder="Lobby ID" />
-        <input type="text" required name="player" placeholder="Player Name" />
-        <Button type="submit">Join Lobby</Button>
+        <div class="card-body">
+            <label class="form-control w-full">
+                <div class="label"><span class="label-text">Lobby ID</span></div>
+                <input type="number" required min="0" placeholder="0" name="lid" class="input input-bordered w-full" />
+            </label>
+            <label class="form-control w-full">
+                <div class="label"><span class="label-text">Player Name</span></div>
+                <input type="text" required name="player" placeholder="Lino" class="input input-bordered w-full" />
+            </label>
+            <button type="submit" class="btn btn-primary mt-4">Join Lobby</button>
+        </div>
     </form>
 {:else}
     <ZipZapZop {zzz} />
