@@ -67,8 +67,10 @@
         {#if target !== null}
             {@const prev = prevPlayerAction(zzz.expected.action)}
             {@const [alert, text] = alertClasses(prev)}
-            <div role="alert" class="alert {alert} {text} shadow-sm">
-                <span><strong>{prev}</strong>! What's next, <strong>{target}</strong>?</span>
+            <div role="alert" class="alert {alert} {text} grid-cols-1 shadow-sm">
+                <h1 class="place-self-center text-2xl md:text-3xl">
+                    <strong>{prev}</strong>! What's next, <strong>{target}</strong>?
+                </h1>
             </div>
         {/if}
         {#if zzz.eliminated === null}
