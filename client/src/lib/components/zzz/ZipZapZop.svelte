@@ -128,8 +128,8 @@
             <div class="flex flex-col gap-4 text-center">
                 <h1 class="text-4xl md:text-5xl">Game over!</h1>
                 <h2 class="text-2xl md:text-3xl">Congratulations to:</h2>
-                <div role="alert" class="alert alert-success shadow-sm">
-                    <span><strong>{winner}</strong>!</span>
+                <div role="alert" class="alert alert-success grid-cols-1 shadow-sm">
+                    <span class="place-self-center"><strong>{winner}</strong>!</span>
                 </div>
             </div>
         {/if}
