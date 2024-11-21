@@ -11,7 +11,9 @@
         value: DOMHighResTimeStamp;
     }
 
+    let id = null as number | null;
     let progress = $state<Progress>();
+
     function tick(value: DOMHighResTimeStamp) {
         // Update the current progress
         if (typeof progress === 'undefined') progress = { min: value, value };
@@ -19,11 +21,14 @@
 
         // Clamp down and re-render if necessary
         if (end <= progress.value) progress.value = end;
-        else requestAnimationFrame(tick);
+        else id = requestAnimationFrame(tick);
     }
 
     $effect(() => {
-        requestAnimationFrame(tick);
+        id = requestAnimationFrame(tick);
+        return () => {
+            if (id !== null) cancelAnimationFrame(id);
+        };
     });
 </script>
 
