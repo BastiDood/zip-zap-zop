@@ -73,6 +73,9 @@
                 </h1>
             </div>
         {/if}
+        {#key zzz.expected.deadline}
+            <Deadline deadline={zzz.expected.deadline} />
+        {/key}
         {#if zzz.eliminated === null}
             <div role="alert" class="alert skeleton shadow-sm">Nobody has been eliminated yet.</div>
         {:else}
@@ -80,9 +83,6 @@
                 <span><strong>{zzz.eliminated}</strong> has been eliminated.</span>
             </div>
         {/if}
-        {#key zzz.expected.deadline}
-            <Deadline deadline={zzz.expected.deadline} />
-        {/key}
         <div class="overflow-x-auto">
             <table class="table">
                 <thead>
