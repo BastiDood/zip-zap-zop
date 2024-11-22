@@ -83,17 +83,17 @@
                 <span><strong>{zzz.eliminated}</strong> has been eliminated.</span>
             </div>
         {/if}
-        <div class="overflow-x-auto">
-            <table class="table">
-                <thead>
-                    <tr>
+        <div class="flex justify-center overflow-x-auto">
+            <table class="table-auto">
+                <thead class="border-b border-slate-700 text-left text-slate-500">
+                    <tr class="*:p-2">
                         <th>Actions</th>
                         <th>Target</th>
                     </tr>
                 </thead>
                 <tbody class="empty:hidden">
                     {#each zzz.players as [pid, player] (pid)}
-                        <tr>
+                        <tr class="border-b border-slate-700 *:p-2">
                             <td>
                                 <button
                                     type="button"
