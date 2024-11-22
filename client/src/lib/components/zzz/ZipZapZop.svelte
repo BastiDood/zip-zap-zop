@@ -67,10 +67,15 @@
         {#if target !== null}
             {@const prev = prevPlayerAction(zzz.expected.action)}
             {@const [alert, text] = alertClasses(prev)}
-            <div role="alert" class="alert {alert} {text} shadow-sm">
-                <span><strong>{prev}</strong>! What's next, <strong>{target}</strong>?</span>
+            <div role="alert" class="alert {alert} {text} grid-cols-1 shadow-sm">
+                <h1 class="place-self-center text-2xl md:text-3xl">
+                    <strong>{prev}</strong>! What's next, <strong>{target}</strong>?
+                </h1>
             </div>
         {/if}
+        {#key zzz.expected.deadline}
+            <Deadline deadline={zzz.expected.deadline} />
+        {/key}
         {#if zzz.eliminated === null}
             <div role="alert" class="alert skeleton shadow-sm">Nobody has been eliminated yet.</div>
         {:else}
@@ -78,21 +83,17 @@
                 <span><strong>{zzz.eliminated}</strong> has been eliminated.</span>
             </div>
         {/if}
-        {#key zzz.expected.deadline}
-            <Deadline deadline={zzz.expected.deadline} />
-        {/key}
-        <div class="overflow-x-auto">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Controls</th>
+        <div class="flex justify-center overflow-x-auto">
+            <table class="table-auto">
+                <thead class="border-b border-slate-700 text-left text-slate-500">
+                    <tr class="*:p-2">
+                        <th>Actions</th>
+                        <th>Target</th>
                     </tr>
                 </thead>
                 <tbody class="empty:hidden">
                     {#each zzz.players as [pid, player] (pid)}
-                        <tr>
-                            <td><strong>{player}</strong></td>
+                        <tr class="border-b border-slate-700 *:p-2">
                             <td>
                                 <button
                                     type="button"
@@ -113,6 +114,7 @@
                                     class="btn btn-warning btn-sm">Zop</button
                                 >
                             </td>
+                            <td><strong>{player}</strong></td>
                         </tr>
                     {/each}
                 </tbody>
@@ -121,10 +123,16 @@
     {/if}
 {:else}
     {@const winner = zzz.players.get(zzz.winner) ?? zzz.player}
-    {#if winner !== null}
-        <div role="alert" class="alert alert-success shadow-sm">
-            <span>Congratulations to <strong>{winner}</strong>!</span>
-        </div>
-    {/if}
-    <a href="/" class="btn btn-primary">Go Back Home</a>
+    <div class="flex flex-col items-center gap-12">
+        {#if winner !== null}
+            <div class="flex flex-col gap-4 text-center">
+                <h1 class="text-4xl md:text-5xl">Game over!</h1>
+                <h2 class="text-2xl md:text-3xl">Congratulations to:</h2>
+                <div role="alert" class="alert alert-success grid-cols-1 shadow-sm">
+                    <span class="place-self-center"><strong>{winner}</strong>!</span>
+                </div>
+            </div>
+        {/if}
+        <a href="/" class="btn btn-primary">Go Back Home</a>
+    </div>
 {/if}
