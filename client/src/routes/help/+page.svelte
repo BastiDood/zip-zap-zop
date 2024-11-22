@@ -1,5 +1,5 @@
 <div class="flex h-screen flex-col items-center justify-center gap-4 px-12">
-    <div class="space-y-4 text-left prose lg:prose-xl">
+    <div class="lg:prose-xl prose space-y-4 text-left">
         <h2 class="text-3xl">Help</h2>
         <p>
             Zip Zap Zop is a very simple game. During each turn, a player has three ways to respond: <strong>Zip</strong
