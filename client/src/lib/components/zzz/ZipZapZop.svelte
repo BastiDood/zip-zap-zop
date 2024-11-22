@@ -87,14 +87,13 @@
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Name</th>
-                        <th>Controls</th>
+                        <th>Actions</th>
+                        <th>Target</th>
                     </tr>
                 </thead>
                 <tbody class="empty:hidden">
                     {#each zzz.players as [pid, player] (pid)}
                         <tr>
-                            <td><strong>{player}</strong></td>
                             <td>
                                 <button
                                     type="button"
@@ -115,6 +114,7 @@
                                     class="btn btn-warning btn-sm">Zop</button
                                 >
                             </td>
+                            <td><strong>{player}</strong></td>
                         </tr>
                     {/each}
                 </tbody>
