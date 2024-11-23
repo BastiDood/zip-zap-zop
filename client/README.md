@@ -1,5 +1,13 @@
 # Development
 
+## Environment Variables
+
+In a `.env` file, the following variables must be defined before building the web application.
+
+| **Name**                        | **Description**                                            | **Example**            |
+| ------------------------------- | ---------------------------------------------------------- | ---------------------- |
+| `PUBLIC_ZZZ_WEBSOCKET_BASE_URL` | The WebSocket base URL where the game server is hosted in. | `ws://localhost:3000/` |
+
 ## Running the Web Server
 
 ```bash
