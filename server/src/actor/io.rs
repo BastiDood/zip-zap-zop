@@ -77,7 +77,7 @@ pub async fn event_to_websocket_msgpack_actor<Writer>(
             }
         };
 
-        let payload = Payload::Borrowed(&bytes).into();
+        let payload = Payload::Borrowed(&bytes);
         if let Err(err) = ws_writer.write_frame(Frame::binary(payload)).await {
             error!(?err, "websocket writer error encountered");
             break;
