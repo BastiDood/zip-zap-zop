@@ -38,6 +38,7 @@
 
     function startAction(event: MouseEvent) {
         isDragging = true;
+        mousePosition = { x: event.clientX, y: event.clientY - 16 };
         const clickTarget = event.currentTarget;
         if (clickTarget instanceof HTMLButtonElement) {
             const btnBounds = clickTarget.getBoundingClientRect();
