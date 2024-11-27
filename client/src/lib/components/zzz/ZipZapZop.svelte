@@ -83,42 +83,32 @@
                 <span><strong>{zzz.eliminated}</strong> has been eliminated.</span>
             </div>
         {/if}
-        <div class="flex justify-center overflow-x-auto">
-            <table class="table-auto">
-                <thead class="border-b border-slate-700 text-left text-slate-500">
-                    <tr class="*:p-2">
-                        <th>Actions</th>
-                        <th>Target</th>
-                    </tr>
-                </thead>
-                <tbody class="empty:hidden">
-                    {#each zzz.players as [pid, player] (pid)}
-                        <tr class="border-b border-slate-700 *:p-2">
-                            <td>
-                                <button
-                                    type="button"
-                                    {disabled}
-                                    onclick={() => zzz.respond(pid, PlayerAction.Zip)}
-                                    class="btn btn-info btn-sm">Zip</button
-                                >
-                                <button
-                                    type="button"
-                                    {disabled}
-                                    onclick={() => zzz.respond(pid, PlayerAction.Zap)}
-                                    class="btn btn-success btn-sm">Zap</button
-                                >
-                                <button
-                                    type="button"
-                                    {disabled}
-                                    onclick={() => zzz.respond(pid, PlayerAction.Zop)}
-                                    class="btn btn-warning btn-sm">Zop</button
-                                >
-                            </td>
-                            <td><strong>{player}</strong></td>
-                        </tr>
-                    {/each}
-                </tbody>
-            </table>
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-4 lg:grid-cols-5">
+            {#each zzz.players as [pid, player] (pid)}
+                <div class="grid grid-rows-2 gap-2 rounded-xl bg-neutral p-4 text-neutral-content">
+                    <p class="w-full truncate text-center font-bold">{player}</p>
+                    <div class="flex flex-row justify-center gap-2">
+                        <button
+                            type="button"
+                            {disabled}
+                            onclick={() => zzz.respond(pid, PlayerAction.Zip)}
+                            class="btn btn-info btn-sm">Zip</button
+                        >
+                        <button
+                            type="button"
+                            {disabled}
+                            onclick={() => zzz.respond(pid, PlayerAction.Zap)}
+                            class="btn btn-success btn-sm">Zap</button
+                        >
+                        <button
+                            type="button"
+                            {disabled}
+                            onclick={() => zzz.respond(pid, PlayerAction.Zop)}
+                            class="btn btn-warning btn-sm">Zop</button
+                        >
+                    </div>
+                </div>
+            {/each}
         </div>
     {/if}
 {:else}
