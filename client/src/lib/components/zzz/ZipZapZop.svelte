@@ -9,6 +9,9 @@
 
     const { zzz }: Props = $props();
 
+    let isDragging = $state(false);
+    let nextAction: PlayerAction | null;
+
     function prevPlayerAction(action: PlayerAction) {
         switch (action) {
             case PlayerAction.Zip:
@@ -28,6 +31,27 @@
                 return ['alert-success', 'text-success-content'] as const;
             case PlayerAction.Zop:
                 return ['alert-warning', 'text-warning-content'] as const;
+        }
+    }
+
+    function startAction(action: PlayerAction) {
+        isDragging = true;
+        switch (action) {
+            case PlayerAction.Zip:
+                nextAction = PlayerAction.Zip;
+                return;
+            case PlayerAction.Zap:
+                nextAction = PlayerAction.Zap;
+                return;
+            case PlayerAction.Zop:
+                nextAction = PlayerAction.Zop;
+                return;
+        }
+    }
+
+    function selectTarget(pid: number) {
+        if (isDragging && nextAction !== null) {
+            zzz.respond(pid, nextAction);
         }
     }
 </script>
@@ -83,30 +107,37 @@
                 <span><strong>{zzz.eliminated}</strong> has been eliminated.</span>
             </div>
         {/if}
-        <div class="grid grid-cols-1 gap-4 md:grid-cols-4 lg:grid-cols-5">
+        <div class="flex flex-row justify-center gap-2">
+            <button
+                type="button"
+                {disabled}
+                onmousedown={() => startAction(PlayerAction.Zip)}
+                class="btn btn-circle btn-info btn-lg">Zip</button
+            >
+            <button
+                type="button"
+                {disabled}
+                onmousedown={() => startAction(PlayerAction.Zap)}
+                class="btn btn-circle btn-success btn-lg">Zap</button
+            >
+            <button
+                type="button"
+                {disabled}
+                onmousedown={() => startAction(PlayerAction.Zop)}
+                class="btn btn-circle btn-warning btn-lg">Zop</button
+            >
+        </div>
+        <div class="grid grid-cols-3 gap-2 md:gap-4 lg:grid-cols-5">
             {#each zzz.players as [pid, player] (pid)}
-                <div class="grid grid-rows-2 gap-2 rounded-xl bg-neutral p-4 text-neutral-content">
+                <div
+                    role="gridcell"
+                    tabindex="0"
+                    class="rounded-xl border border-neutral-content px-4 py-2 text-neutral-content {isDragging
+                        ? 'hover:bg-base-200'
+                        : ''}"
+                    onmouseup={() => selectTarget(pid)}
+                >
                     <p class="w-full truncate text-center font-bold">{player}</p>
-                    <div class="flex flex-row justify-center gap-2">
-                        <button
-                            type="button"
-                            {disabled}
-                            onclick={() => zzz.respond(pid, PlayerAction.Zip)}
-                            class="btn btn-info btn-sm">Zip</button
-                        >
-                        <button
-                            type="button"
-                            {disabled}
-                            onclick={() => zzz.respond(pid, PlayerAction.Zap)}
-                            class="btn btn-success btn-sm">Zap</button
-                        >
-                        <button
-                            type="button"
-                            {disabled}
-                            onclick={() => zzz.respond(pid, PlayerAction.Zop)}
-                            class="btn btn-warning btn-sm">Zop</button
-                        >
-                    </div>
                 </div>
             {/each}
         </div>
@@ -126,3 +157,5 @@
         <a href="/" class="btn btn-primary">Go Back Home</a>
     </div>
 {/if}
+
+<svelte:window onmouseup={() => (isDragging = false)} />
