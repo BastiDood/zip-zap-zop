@@ -9,6 +9,8 @@
 
     const { zzz }: Props = $props();
 
+    let mousePosition = $state({ x: 0, y: 0 });
+    let dragStartPos = $state({ x: 0, y: 0 });
     let isDragging = $state(false);
     let nextAction: PlayerAction | null;
 
@@ -34,18 +36,33 @@
         }
     }
 
-    function startAction(action: PlayerAction) {
+    function startAction(event: MouseEvent) {
         isDragging = true;
-        switch (action) {
-            case PlayerAction.Zip:
-                nextAction = PlayerAction.Zip;
-                return;
-            case PlayerAction.Zap:
-                nextAction = PlayerAction.Zap;
-                return;
-            case PlayerAction.Zop:
-                nextAction = PlayerAction.Zop;
-                return;
+        const clickTarget = event.currentTarget;
+        if (clickTarget instanceof HTMLButtonElement) {
+            const btnBounds = clickTarget.getBoundingClientRect();
+            dragStartPos = {
+                x: btnBounds.left - 8 + btnBounds.width / 2,
+                y: btnBounds.top + btnBounds.height / 2,
+            };
+            const action = clickTarget.innerText;
+            switch (action) {
+                case 'Zip':
+                    nextAction = PlayerAction.Zip;
+                    return;
+                case 'Zap':
+                    nextAction = PlayerAction.Zap;
+                    return;
+                case 'Zop':
+                    nextAction = PlayerAction.Zop;
+                    return;
+            }
+        }
+    }
+
+    function aimAction(event: MouseEvent) {
+        if (isDragging) {
+            mousePosition = { x: event.clientX, y: event.clientY - 16 };
         }
     }
 
@@ -107,24 +124,27 @@
                 <span><strong>{zzz.eliminated}</strong> has been eliminated.</span>
             </div>
         {/if}
+        {#if isDragging}
+            <svg class="pointer-events-none absolute left-0 top-0 h-full w-full fill-primary stroke-2 text-primary">
+                <line
+                    x1={dragStartPos.x}
+                    y1={dragStartPos.y}
+                    x2={mousePosition.x}
+                    y2={mousePosition.y}
+                    stroke="currentColor"
+                />
+                <circle cx={mousePosition.x} cy={mousePosition.y} r="8" />
+            </svg>
+        {/if}
         <div class="flex flex-row justify-center gap-2">
-            <button
-                type="button"
-                {disabled}
-                onmousedown={() => startAction(PlayerAction.Zip)}
-                class="btn btn-circle btn-info btn-lg">Zip</button
+            <button type="button" {disabled} onmousedown={startAction} class="btn btn-circle btn-info btn-lg"
+                >Zip</button
             >
-            <button
-                type="button"
-                {disabled}
-                onmousedown={() => startAction(PlayerAction.Zap)}
-                class="btn btn-circle btn-success btn-lg">Zap</button
+            <button type="button" {disabled} onmousedown={startAction} class="btn btn-circle btn-success btn-lg"
+                >Zap</button
             >
-            <button
-                type="button"
-                {disabled}
-                onmousedown={() => startAction(PlayerAction.Zop)}
-                class="btn btn-circle btn-warning btn-lg">Zop</button
+            <button type="button" {disabled} onmousedown={startAction} class="btn btn-circle btn-warning btn-lg"
+                >Zop</button
             >
         </div>
         <div class="grid grid-cols-3 gap-2 md:gap-4 lg:grid-cols-5">
@@ -158,4 +178,4 @@
     </div>
 {/if}
 
-<svelte:window onmouseup={() => (isDragging = false)} />
+<svelte:window onmouseup={() => (isDragging = false)} onmousemove={aimAction} />
