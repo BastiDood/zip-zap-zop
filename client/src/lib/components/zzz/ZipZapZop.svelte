@@ -140,13 +140,13 @@
         </div>
         {/if}
         <div class="flex flex-row justify-center gap-2">
-            <button type="button" {disabled} onmousedown={startAction} class="btn btn-circle btn-info btn-lg"
+            <button type="button" {disabled} onpointerdown={startAction} class="btn btn-circle btn-info btn-lg"
                 >Zip</button
             >
-            <button type="button" {disabled} onmousedown={startAction} class="btn btn-circle btn-success btn-lg"
+            <button type="button" {disabled} onpointerdown={startAction} class="btn btn-circle btn-success btn-lg"
                 >Zap</button
             >
-            <button type="button" {disabled} onmousedown={startAction} class="btn btn-circle btn-warning btn-lg"
+            <button type="button" {disabled} onpointerdown={startAction} class="btn btn-circle btn-warning btn-lg"
                 >Zop</button
             >
         </div>
@@ -158,7 +158,7 @@
                     class="rounded-xl border border-neutral-content px-4 py-2 text-neutral-content {isDragging
                         ? 'hover:bg-base-200'
                         : ''}"
-                    onmouseup={() => selectTarget(pid)}
+                    onpointerup={() => selectTarget(pid)}
                 >
                     <p class="w-full truncate text-center font-bold">{player}</p>
                 </div>
@@ -181,4 +181,4 @@
     </div>
 {/if}
 
-<svelte:window onmouseup={() => (isDragging = false)} onmousemove={aimAction} />
+<svelte:window onpointerup={() => (isDragging = false)} onpointermove={aimAction} />
