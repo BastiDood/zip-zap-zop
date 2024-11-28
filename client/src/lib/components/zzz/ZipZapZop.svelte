@@ -147,30 +147,29 @@
                         y2={mousePosition.y}
                         stroke="currentColor"
                     />
-                    <circle cx={mousePosition.x} cy={mousePosition.y} r="8" />
                 </svg>
             </div>
         {/if}
-        <div class="flex flex-row justify-center gap-2">
+        <div class="flex flex-row justify-center gap-2 touch-none">
             <button
                 type="button"
                 {disabled}
                 onpointerdown={startAction}
-                class="btn btn-circle btn-info btn-lg ring-offset-neutral active:ring active:ring-info active:ring-offset-4"
+                class="btn btn-circle btn-info btn-lg ring-offset-neutral {isDragging && nextAction === PlayerAction.Zip ? 'ring ring-info ring-offset-4' : ''}"
                 >Zip</button
             >
             <button
                 type="button"
                 {disabled}
                 onpointerdown={startAction}
-                class="btn btn-circle btn-success btn-lg ring-offset-neutral active:ring active:ring-success active:ring-offset-4"
+                class="btn btn-circle btn-success btn-lg ring-offset-neutral {isDragging && nextAction === PlayerAction.Zap ? 'ring ring-success ring-offset-4' : ''}"
                 >Zap</button
             >
             <button
                 type="button"
                 {disabled}
                 onpointerdown={startAction}
-                class="btn btn-circle btn-warning btn-lg ring-offset-neutral active:ring active:ring-warning active:ring-offset-4"
+                class="btn btn-circle btn-warning btn-lg ring-offset-neutral {isDragging && nextAction === PlayerAction.Zop ? 'ring ring-warning ring-offset-4' : ''}"
                 >Zop</button
             >
         </div>
