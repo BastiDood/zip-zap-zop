@@ -152,13 +152,25 @@
             </div>
         {/if}
         <div class="flex flex-row justify-center gap-2">
-            <button type="button" {disabled} onpointerdown={startAction} class="btn btn-circle btn-info btn-lg"
+            <button
+                type="button"
+                {disabled}
+                onpointerdown={startAction}
+                class="btn btn-circle btn-info btn-lg ring-offset-neutral active:ring active:ring-info active:ring-offset-4"
                 >Zip</button
             >
-            <button type="button" {disabled} onpointerdown={startAction} class="btn btn-circle btn-success btn-lg"
+            <button
+                type="button"
+                {disabled}
+                onpointerdown={startAction}
+                class="btn btn-circle btn-success btn-lg ring-offset-neutral active:ring active:ring-success active:ring-offset-4"
                 >Zap</button
             >
-            <button type="button" {disabled} onpointerdown={startAction} class="btn btn-circle btn-warning btn-lg"
+            <button
+                type="button"
+                {disabled}
+                onpointerdown={startAction}
+                class="btn btn-circle btn-warning btn-lg ring-offset-neutral active:ring active:ring-warning active:ring-offset-4"
                 >Zop</button
             >
         </div>
