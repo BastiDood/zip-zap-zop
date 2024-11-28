@@ -38,12 +38,12 @@
 
     function startAction(event: MouseEvent) {
         isDragging = true;
-        mousePosition = { x: event.clientX, y: event.clientY - 16 };
+        mousePosition = { x: event.clientX, y: event.clientY };
         const clickTarget = event.currentTarget;
         if (clickTarget instanceof HTMLButtonElement) {
             const btnBounds = clickTarget.getBoundingClientRect();
             dragStartPos = {
-                x: btnBounds.left - 8 + btnBounds.width / 2,
+                x: btnBounds.left + btnBounds.width / 2,
                 y: btnBounds.top + btnBounds.height / 2,
             };
             const action = clickTarget.innerText;
@@ -63,7 +63,7 @@
 
     function aimAction(event: MouseEvent) {
         if (isDragging) {
-            mousePosition = { x: event.clientX, y: event.clientY - 16 };
+            mousePosition = { x: event.clientX, y: event.clientY };
         }
     }
 
@@ -126,6 +126,7 @@
             </div>
         {/if}
         {#if isDragging}
+        <div>
             <svg class="pointer-events-none absolute left-0 top-0 h-full w-full fill-primary stroke-2 text-primary">
                 <line
                     x1={dragStartPos.x}
@@ -136,6 +137,7 @@
                 />
                 <circle cx={mousePosition.x} cy={mousePosition.y} r="8" />
             </svg>
+        </div>
         {/if}
         <div class="flex flex-row justify-center gap-2">
             <button type="button" {disabled} onmousedown={startAction} class="btn btn-circle btn-info btn-lg"
