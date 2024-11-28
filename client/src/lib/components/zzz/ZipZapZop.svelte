@@ -12,7 +12,7 @@
     let mousePosition = $state({ x: 0, y: 0 });
     let dragStartPos = $state({ x: 0, y: 0 });
     let isDragging = $state(false);
-    let nextAction: PlayerAction | null;
+    let nextAction: PlayerAction | null = $state(null);
 
     function prevPlayerAction(action: PlayerAction) {
         switch (action) {
@@ -33,6 +33,17 @@
                 return ['alert-success', 'text-success-content'] as const;
             case PlayerAction.Zop:
                 return ['alert-warning', 'text-warning-content'] as const;
+        }
+    }
+
+    function playerActionColorClasses(action: PlayerAction) {
+        switch (action) {
+            case PlayerAction.Zip:
+                return ['fill-info', 'text-info'] as const;
+            case PlayerAction.Zap:
+                return ['fill-success', 'text-success'] as const;
+            case PlayerAction.Zop:
+                return ['fill-warning', 'text-warning'] as const;
         }
     }
 
@@ -125,19 +136,20 @@
                 <span><strong>{zzz.eliminated}</strong> has been eliminated.</span>
             </div>
         {/if}
-        {#if isDragging}
-        <div>
-            <svg class="pointer-events-none absolute left-0 top-0 h-full w-full fill-primary stroke-2 text-primary">
-                <line
-                    x1={dragStartPos.x}
-                    y1={dragStartPos.y}
-                    x2={mousePosition.x}
-                    y2={mousePosition.y}
-                    stroke="currentColor"
-                />
-                <circle cx={mousePosition.x} cy={mousePosition.y} r="8" />
-            </svg>
-        </div>
+        {#if isDragging && nextAction !== null}
+            {@const [fillColor, lineColor] = playerActionColorClasses(nextAction)}
+            <div>
+                <svg class="pointer-events-none absolute left-0 top-0 h-full w-full {fillColor} stroke-2 {lineColor}">
+                    <line
+                        x1={dragStartPos.x}
+                        y1={dragStartPos.y}
+                        x2={mousePosition.x}
+                        y2={mousePosition.y}
+                        stroke="currentColor"
+                    />
+                    <circle cx={mousePosition.x} cy={mousePosition.y} r="8" />
+                </svg>
+            </div>
         {/if}
         <div class="flex flex-row justify-center gap-2">
             <button type="button" {disabled} onpointerdown={startAction} class="btn btn-circle btn-info btn-lg"
