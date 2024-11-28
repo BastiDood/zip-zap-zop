@@ -136,7 +136,7 @@
                 <span><strong>{zzz.eliminated}</strong> has been eliminated.</span>
             </div>
         {/if}
-        {#if isDragging && nextAction !== null}
+        {#if isDragging && nextAction !== null && !disabled}
             {@const [fillColor, lineColor] = playerActionColorClasses(nextAction)}
             <div>
                 <svg class="pointer-events-none absolute left-0 top-0 h-full w-full {fillColor} stroke-2 {lineColor}">
