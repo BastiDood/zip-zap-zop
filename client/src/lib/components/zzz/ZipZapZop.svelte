@@ -11,8 +11,8 @@
 
     let mousePosition = $state({ x: 0, y: 0 });
     let dragStartPos = $state({ x: 0, y: 0 });
-    let isDragging = $state(false);
     let nextAction: PlayerAction | null = $state(null);
+    let hoveredPlayer: number | null = $state(null);
 
     function prevPlayerAction(action: PlayerAction) {
         switch (action) {
@@ -47,8 +47,7 @@
         }
     }
 
-    function startAction(event: MouseEvent) {
-        isDragging = true;
+    function startAction(event: DragEvent) {
         mousePosition = { x: event.clientX, y: event.clientY };
         const clickTarget = event.currentTarget;
         if (clickTarget instanceof HTMLButtonElement) {
@@ -72,16 +71,12 @@
         }
     }
 
-    function aimAction(event: MouseEvent) {
-        if (isDragging) {
-            mousePosition = { x: event.clientX, y: event.clientY };
-        }
-    }
-
-    function selectTarget(pid: number) {
-        if (isDragging && nextAction !== null) {
+    function handleDrop(pid: number) {
+        if (nextAction !== null) {
             zzz.respond(pid, nextAction);
         }
+        hoveredPlayer = null;
+        nextAction = null;
     }
 </script>
 
@@ -136,10 +131,10 @@
                 <span><strong>{zzz.eliminated}</strong> has been eliminated.</span>
             </div>
         {/if}
-        {#if isDragging && nextAction !== null && !disabled}
-            {@const [fillColor, lineColor] = playerActionColorClasses(nextAction)}
+        {#if nextAction !== null && !disabled}
+            {@const lineColor = playerActionColorClasses(nextAction)[1]}
             <div>
-                <svg class="pointer-events-none absolute left-0 top-0 h-full w-full {fillColor} stroke-2 {lineColor}">
+                <svg class="pointer-events-none absolute left-0 top-0 h-full w-full stroke-2 {lineColor}">
                     <line
                         x1={dragStartPos.x}
                         y1={dragStartPos.y}
@@ -150,27 +145,33 @@
                 </svg>
             </div>
         {/if}
-        <div class="flex flex-row justify-center gap-2 touch-none">
+        <div class="flex touch-none select-none flex-row justify-center gap-2">
             <button
                 type="button"
+                draggable="true"
                 {disabled}
-                onpointerdown={startAction}
-                class="btn btn-circle btn-info btn-lg ring-offset-neutral {isDragging && nextAction === PlayerAction.Zip ? 'ring ring-info ring-offset-4' : ''}"
-                >Zip</button
+                ondragstart={startAction}
+                class="btn btn-circle btn-info btn-lg ring-offset-neutral {nextAction === PlayerAction.Zip
+                    ? 'ring ring-info ring-offset-4'
+                    : ''}">Zip</button
             >
             <button
                 type="button"
+                draggable="true"
                 {disabled}
-                onpointerdown={startAction}
-                class="btn btn-circle btn-success btn-lg ring-offset-neutral {isDragging && nextAction === PlayerAction.Zap ? 'ring ring-success ring-offset-4' : ''}"
-                >Zap</button
+                ondragstart={startAction}
+                class="btn btn-circle btn-success btn-lg ring-offset-neutral {nextAction === PlayerAction.Zap
+                    ? 'ring ring-success ring-offset-4'
+                    : ''}">Zap</button
             >
             <button
                 type="button"
+                draggable="true"
                 {disabled}
-                onpointerdown={startAction}
-                class="btn btn-circle btn-warning btn-lg ring-offset-neutral {isDragging && nextAction === PlayerAction.Zop ? 'ring ring-warning ring-offset-4' : ''}"
-                >Zop</button
+                ondragstart={startAction}
+                class="btn btn-circle btn-warning btn-lg ring-offset-neutral {nextAction === PlayerAction.Zop
+                    ? 'ring ring-warning ring-offset-4'
+                    : ''}">Zop</button
             >
         </div>
         <div class="grid grid-cols-3 gap-2 md:gap-4 lg:grid-cols-5">
@@ -178,10 +179,15 @@
                 <div
                     role="gridcell"
                     tabindex="0"
-                    class="rounded-xl border border-neutral-content px-4 py-2 text-neutral-content {isDragging
-                        ? 'hover:bg-base-200'
-                        : ''}"
-                    onpointerup={() => selectTarget(pid)}
+                    class="rounded-xl border bg-base-300 px-4 py-2 text-neutral-content {pid === hoveredPlayer
+                        ? 'animate-pulse border-neutral-content'
+                        : 'border-base-300'}"
+                    ondragover={e => {
+                        e.preventDefault();
+                        hoveredPlayer = pid;
+                    }}
+                    ondragleave={() => (hoveredPlayer = null)}
+                    ondrop={() => handleDrop(pid)}
                 >
                     <p class="w-full truncate text-center font-bold">{player}</p>
                 </div>
@@ -204,4 +210,9 @@
     </div>
 {/if}
 
-<svelte:window onpointerup={() => (isDragging = false)} onpointermove={aimAction} />
+<svelte:window
+    ondrag={e => (mousePosition = { x: e.clientX, y: e.clientY })}
+    ondragend={() => {
+        nextAction = null;
+    }}
+/>
