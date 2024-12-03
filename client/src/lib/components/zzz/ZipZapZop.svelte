@@ -9,6 +9,11 @@
 
     const { zzz }: Props = $props();
 
+    let mousePosition = $state({ x: 0, y: 0 });
+    let dragStartPos = $state({ x: 0, y: 0 });
+    let nextAction: PlayerAction | null = $state(null);
+    let hoveredPlayer: number | null = $state(null);
+
     function prevPlayerAction(action: PlayerAction) {
         switch (action) {
             case PlayerAction.Zip:
@@ -29,6 +34,37 @@
             case PlayerAction.Zop:
                 return ['alert-warning', 'text-warning-content'] as const;
         }
+    }
+
+    function playerActionColorClasses(action: PlayerAction) {
+        switch (action) {
+            case PlayerAction.Zip:
+                return ['text-info', 'fill-info'] as const;
+            case PlayerAction.Zap:
+                return ['text-success', 'fill-success'] as const;
+            case PlayerAction.Zop:
+                return ['text-warning', 'fill-warning'] as const;
+        }
+    }
+
+    function positionLineStart(event: PointerEvent) {
+        mousePosition = { x: event.clientX, y: event.clientY };
+        const clickTarget = event.currentTarget;
+        if (clickTarget instanceof HTMLButtonElement) {
+            const btnBounds = clickTarget.getBoundingClientRect();
+            dragStartPos = {
+                x: btnBounds.left + btnBounds.width / 2,
+                y: btnBounds.top + btnBounds.height / 2,
+            };
+        }
+    }
+
+    function handleDrop(pid: number) {
+        if (nextAction !== null) {
+            zzz.respond(pid, nextAction);
+        }
+        hoveredPlayer = null;
+        nextAction = null;
     }
 </script>
 
@@ -83,42 +119,70 @@
                 <span><strong>{zzz.eliminated}</strong> has been eliminated.</span>
             </div>
         {/if}
-        <div class="flex justify-center overflow-x-auto">
-            <table class="table-auto">
-                <thead class="border-b border-slate-700 text-left text-slate-500">
-                    <tr class="*:p-2">
-                        <th>Actions</th>
-                        <th>Target</th>
-                    </tr>
-                </thead>
-                <tbody class="empty:hidden">
-                    {#each zzz.players as [pid, player] (pid)}
-                        <tr class="border-b border-slate-700 *:p-2">
-                            <td>
-                                <button
-                                    type="button"
-                                    {disabled}
-                                    onclick={() => zzz.respond(pid, PlayerAction.Zip)}
-                                    class="btn btn-info btn-sm">Zip</button
-                                >
-                                <button
-                                    type="button"
-                                    {disabled}
-                                    onclick={() => zzz.respond(pid, PlayerAction.Zap)}
-                                    class="btn btn-success btn-sm">Zap</button
-                                >
-                                <button
-                                    type="button"
-                                    {disabled}
-                                    onclick={() => zzz.respond(pid, PlayerAction.Zop)}
-                                    class="btn btn-warning btn-sm">Zop</button
-                                >
-                            </td>
-                            <td><strong>{player}</strong></td>
-                        </tr>
-                    {/each}
-                </tbody>
-            </table>
+        {#if nextAction !== null && !disabled}
+            {@const [lineColor] = playerActionColorClasses(nextAction)}
+            <div>
+                <svg class="pointer-events-none absolute left-0 top-0 h-full w-full stroke-2 {lineColor}">
+                    <line
+                        x1={dragStartPos.x}
+                        y1={dragStartPos.y}
+                        x2={mousePosition.x}
+                        y2={mousePosition.y}
+                        stroke="currentColor"
+                    />
+                </svg>
+            </div>
+        {/if}
+        <div class="flex touch-none select-none flex-row justify-center gap-2">
+            <button
+                type="button"
+                draggable="true"
+                {disabled}
+                onpointerdown={positionLineStart}
+                ondragstart={() => (nextAction = PlayerAction.Zip)}
+                class="btn btn-circle btn-info btn-lg ring-offset-neutral {nextAction === PlayerAction.Zip
+                    ? 'ring ring-info ring-offset-4'
+                    : ''}">Zip</button
+            >
+            <button
+                type="button"
+                draggable="true"
+                {disabled}
+                onpointerdown={positionLineStart}
+                ondragstart={() => (nextAction = PlayerAction.Zap)}
+                class="btn btn-circle btn-success btn-lg ring-offset-neutral {nextAction === PlayerAction.Zap
+                    ? 'ring ring-success ring-offset-4'
+                    : ''}">Zap</button
+            >
+            <button
+                type="button"
+                draggable="true"
+                {disabled}
+                onpointerdown={positionLineStart}
+                ondragstart={() => (nextAction = PlayerAction.Zop)}
+                class="btn btn-circle btn-warning btn-lg ring-offset-neutral {nextAction === PlayerAction.Zop
+                    ? 'ring ring-warning ring-offset-4'
+                    : ''}">Zop</button
+            >
+        </div>
+        <div class="grid grid-cols-3 gap-2 md:gap-4 lg:grid-cols-5">
+            {#each zzz.players as [pid, player] (pid)}
+                <div
+                    role="gridcell"
+                    tabindex="0"
+                    class="rounded-xl border bg-base-300 px-4 py-2 text-neutral-content {pid === hoveredPlayer
+                        ? 'animate-pulse border-neutral-content'
+                        : 'border-base-300'}"
+                    ondragover={e => {
+                        e.preventDefault();
+                        hoveredPlayer = pid;
+                    }}
+                    ondragleave={() => (hoveredPlayer = null)}
+                    ondrop={() => handleDrop(pid)}
+                >
+                    <p class="w-full truncate text-center font-bold">{player}</p>
+                </div>
+            {/each}
         </div>
     {/if}
 {:else}
@@ -136,3 +200,10 @@
         <a href="/" class="btn btn-primary">Go Back Home</a>
     </div>
 {/if}
+
+<svelte:window
+    ondrag={e => (mousePosition = { x: e.clientX, y: e.clientY })}
+    ondragend={() => {
+        nextAction = null;
+    }}
+/>
