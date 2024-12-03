@@ -39,11 +39,11 @@
     function playerActionColorClasses(action: PlayerAction) {
         switch (action) {
             case PlayerAction.Zip:
-                return ['fill-info', 'text-info'] as const;
+                return ['text-info', 'fill-info'] as const;
             case PlayerAction.Zap:
-                return ['fill-success', 'text-success'] as const;
+                return ['text-success', 'fill-success'] as const;
             case PlayerAction.Zop:
-                return ['fill-warning', 'text-warning'] as const;
+                return ['text-warning', 'fill-warning'] as const;
         }
     }
 
