@@ -120,7 +120,7 @@
             </div>
         {/if}
         {#if nextAction !== null && !disabled}
-            {@const lineColor = playerActionColorClasses(nextAction)[1]}
+            {@const [lineColor] = playerActionColorClasses(nextAction)}
             <div>
                 <svg class="pointer-events-none absolute left-0 top-0 h-full w-full stroke-2 {lineColor}">
                     <line
