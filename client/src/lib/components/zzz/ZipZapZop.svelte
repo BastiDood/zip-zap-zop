@@ -47,7 +47,7 @@
         }
     }
 
-    function startAction(event: DragEvent) {
+    function positionLineStart(event: PointerEvent) {
         mousePosition = { x: event.clientX, y: event.clientY };
         const clickTarget = event.currentTarget;
         if (clickTarget instanceof HTMLButtonElement) {
@@ -56,18 +56,6 @@
                 x: btnBounds.left + btnBounds.width / 2,
                 y: btnBounds.top + btnBounds.height / 2,
             };
-            const action = clickTarget.innerText;
-            switch (action) {
-                case 'Zip':
-                    nextAction = PlayerAction.Zip;
-                    return;
-                case 'Zap':
-                    nextAction = PlayerAction.Zap;
-                    return;
-                case 'Zop':
-                    nextAction = PlayerAction.Zop;
-                    return;
-            }
         }
     }
 
@@ -150,7 +138,8 @@
                 type="button"
                 draggable="true"
                 {disabled}
-                ondragstart={startAction}
+                onpointerdown={positionLineStart}
+                ondragstart={() => (nextAction = PlayerAction.Zip)}
                 class="btn btn-circle btn-info btn-lg ring-offset-neutral {nextAction === PlayerAction.Zip
                     ? 'ring ring-info ring-offset-4'
                     : ''}">Zip</button
@@ -159,7 +148,8 @@
                 type="button"
                 draggable="true"
                 {disabled}
-                ondragstart={startAction}
+                onpointerdown={positionLineStart}
+                ondragstart={() => (nextAction = PlayerAction.Zap)}
                 class="btn btn-circle btn-success btn-lg ring-offset-neutral {nextAction === PlayerAction.Zap
                     ? 'ring ring-success ring-offset-4'
                     : ''}">Zap</button
@@ -168,7 +158,8 @@
                 type="button"
                 draggable="true"
                 {disabled}
-                ondragstart={startAction}
+                onpointerdown={positionLineStart}
+                ondragstart={() => (nextAction = PlayerAction.Zop)}
                 class="btn btn-circle btn-warning btn-lg ring-offset-neutral {nextAction === PlayerAction.Zop
                     ? 'ring ring-warning ring-offset-4'
                     : ''}">Zop</button
