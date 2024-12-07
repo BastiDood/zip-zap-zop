@@ -29,7 +29,14 @@
             </label>
             <label class="form-control w-full">
                 <div class="label"><span class="label-text">Player Name</span></div>
-                <input type="text" required name="player" placeholder="Lino" class="input input-bordered w-full" />
+                <input
+                    type="text"
+                    required
+                    name="player"
+                    maxlength="16"
+                    placeholder="Lino"
+                    class="input input-bordered w-full"
+                />
             </label>
             <button type="submit" class="btn btn-primary mt-4">Join Lobby</button>
         </div>
