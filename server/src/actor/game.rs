@@ -40,7 +40,7 @@ async fn handle_game_tick<Player: Debug>(
         Err(GameWinnerError::MorePlayers) => (),
     }
 
-    let secs = 4.0 * (-f64::from(*round) / 16.0).exp();
+    let secs = 6.0 * (-f64::from(*round) / 16.0).exp();
     let duration = Duration::from_secs_f64(secs);
     let deadline = Timestamp::now().saturating_add(duration);
 
