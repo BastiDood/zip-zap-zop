@@ -45,7 +45,7 @@ export class State {
 
     /** Start the state machine as a lobby "host". */
     static host(lobby: string, player: string) {
-        const state = new State(new WebSocket(new URL('create', ZZZ_WEBSOCKET_BASE_URL)), HostEvent, player);
+        const state = new State(new WebSocket(new URL('host', ZZZ_WEBSOCKET_BASE_URL)), HostEvent, player);
         state.lobby = lobby;
         state.#ws.addEventListener(
             'open',
@@ -69,7 +69,7 @@ export class State {
 
     /** Start the state machine as a lobby "guest". */
     static guest(lid: Id, player: string) {
-        const state = new State(new WebSocket(new URL('join', ZZZ_WEBSOCKET_BASE_URL)), GuestEvent, player);
+        const state = new State(new WebSocket(new URL('guest', ZZZ_WEBSOCKET_BASE_URL)), GuestEvent, player);
         state.lid = lid;
         state.#ws.addEventListener(
             'open',

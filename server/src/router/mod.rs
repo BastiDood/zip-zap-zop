@@ -23,7 +23,7 @@ pub fn route(
 
     *res = match req.uri().path() {
         "/lobbies" => todo!("event source"),
-        "/create" => {
+        "/host" => {
             if !upgrade::is_upgrade_request(&req) {
                 *res.status_mut() = StatusCode::BAD_REQUEST;
                 return Ok(());
@@ -32,7 +32,7 @@ pub fn route(
             tokio::spawn(async move { host_actor(&manager, upgrade, 32).await });
             response
         }
-        "/join" => {
+        "/guest" => {
             if !upgrade::is_upgrade_request(&req) {
                 *res.status_mut() = StatusCode::BAD_REQUEST;
                 return Ok(());

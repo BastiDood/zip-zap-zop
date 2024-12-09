@@ -50,7 +50,7 @@ struct LobbyDissolved {
 
 #### Create a New Lobby
 
-A host can create a new lobby by connecting to the `/create` WebSocket endpoint. The client must then immediately send the following message to the server.
+A host can create a new lobby by connecting to the `/host` WebSocket endpoint. The client must then immediately send the following message to the server.
 
 ```rust
 struct CreateLobby {
@@ -95,7 +95,7 @@ struct LobbyPlayerLeft {
 
 #### Join an Existing Lobby
 
-A player can join an existing lobby by connecting to the `/join` WebSocket endpoint. The client must then immediately identify themselves to the lobby.
+A player can join an existing lobby by connecting to the `/guest` WebSocket endpoint. The client must then immediately identify themselves to the lobby.
 
 ```rust
 struct JoinLobby {
