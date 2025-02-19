@@ -1,4 +1,4 @@
-FROM node:23.8.0-alpine3.20 AS static
+FROM node:23.8.0-alpine3.21 AS static
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable pnpm
