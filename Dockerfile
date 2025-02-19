@@ -9,7 +9,7 @@ COPY client/package.json .
 RUN pnpm install --offline
 COPY client .
 ENV PUBLIC_ZZZ_WEBSOCKET_BASE_URL=wss://zip-zap-zop.fly.dev
-RUN  pnpm sync && pnpm build
+RUN pnpm build && pnpm prune --prod --ignore-scripts
 
 FROM lukemathwalker/cargo-chef:0.1.68-rust-1.83.0-alpine3.21 AS chef
 WORKDIR /app
