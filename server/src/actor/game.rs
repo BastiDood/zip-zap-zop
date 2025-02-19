@@ -42,7 +42,7 @@ async fn handle_game_tick<Player: Debug>(
 
     let secs = 6.0 * (-f64::from(*round) / 16.0).exp();
     let duration = Duration::from_secs_f64(secs);
-    let deadline = Timestamp::now().saturating_add(duration);
+    let deadline = Timestamp::now().saturating_add(duration).unwrap();
 
     let expects = zzz.expects(deadline);
     let bytes = rmp_serde::to_vec_named(&Event::from(expects)).unwrap().into();

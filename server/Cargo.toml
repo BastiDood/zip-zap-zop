@@ -24,7 +24,7 @@ version = "1.5"
 features = ["server", "http1"]
 
 [dependencies.jiff]
-version = "0.1.14"
+version = "0.2.1"
 default-features = false
 features = ["std", "serde"]
 
