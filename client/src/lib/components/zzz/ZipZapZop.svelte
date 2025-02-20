@@ -1,5 +1,12 @@
 <script lang="ts">
-    import { DndContext, type DragEndEvent, type DragStartEvent, type UniqueIdentifier } from '@dnd-kit-svelte/core';
+    import {
+        DndContext,
+        type DragEndEvent,
+        DragOverlay,
+        type DragStartEvent,
+        type UniqueIdentifier,
+    } from '@dnd-kit-svelte/core';
+    import ActionButton from './ActionButton.svelte';
     import Deadline from './Deadline.svelte';
     import Draggable from './Draggable.svelte';
     import Droppable from './Droppable.svelte';
@@ -147,6 +154,11 @@
                 <Draggable id="Zap" />
                 <Draggable id="Zop" />
             </div>
+            <DragOverlay dropAnimation={null}>
+                {#if typeof draggedButton === 'string'}
+                    <ActionButton action={draggedButton} />
+                {/if}
+            </DragOverlay>
             <div class="grid grid-cols-3 gap-2 md:gap-4 lg:grid-cols-5">
                 {#each zzz.players as [pid, player] (pid)}
                     <Droppable id={pid}>
