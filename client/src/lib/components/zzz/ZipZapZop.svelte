@@ -5,6 +5,7 @@
     import Droppable from './Droppable.svelte';
     import { PlayerAction } from '$lib/models/game';
     import type { State } from '$lib/zzz/state.svelte';
+    import { assert } from '$lib/utils/assert';
 
     interface Props {
         zzz: State;
@@ -16,18 +17,6 @@
     let dragStartPos = $state({ x: 0, y: 0 });
     let targetedPlayer: UniqueIdentifier | null = $state<UniqueIdentifier | null>(null);
     let draggedButton: UniqueIdentifier | null = $state<UniqueIdentifier | null>(null);
-    const nextAction: PlayerAction | null = $derived.by(() => {
-        switch (draggedButton) {
-            case 'Zip':
-                return PlayerAction.Zip;
-            case 'Zap':
-                return PlayerAction.Zap;
-            case 'Zop':
-                return PlayerAction.Zop;
-            default:
-                return null;
-        }
-    });
 
     function prevPlayerAction(action: PlayerAction) {
         switch (action) {
@@ -72,16 +61,18 @@
                 y: btnBounds.top + btnBounds.height / 2,
             };
     function handleDragStart({ active }: DragStartEvent) {
-        if (active) {
-            draggedButton = active.id as string;
-        }
+        assert(typeof active.id === 'string');
+        draggedButton = active.id;
     }
 
     function handleDrop({ over }: DragEndEvent) {
-        if (over && nextAction) {
-            targetedPlayer = over.id as number;
-            zzz.respond(targetedPlayer, nextAction);
+        if (over !== null && draggedButton !== null) {
+            assert(typeof over.id === 'number');
+            targetedPlayer = over.id;
+            zzz.respond(targetedPlayer, draggedButton as PlayerAction);
         }
+        targetedPlayer = null;
+        draggedButton = null;
     }
 </script>
 
