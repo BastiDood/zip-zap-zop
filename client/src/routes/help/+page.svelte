@@ -49,18 +49,22 @@
             To play, drag your intended action (Zip, Zap, or Zop) and drop it on your targeted player. Remember to only
             act on your turn!
         </p>
-        <DndContext onDragStart={handleDragStart} onDragEnd={() => (draggedButton = null)}>
+        <DndContext
+            onDragStart={handleDragStart}
+            onDragEnd={() => (draggedButton = null)}
+            onDragCancel={() => (draggedButton = null)}
+        >
+            <DragOverlay dropAnimation={null}>
+                {#if typeof draggedButton === 'string'}
+                    <ActionButton action={draggedButton} disabled={false} />
+                {/if}
+            </DragOverlay>
             <div class="space-y-4">
                 <div class="flex touch-none select-none flex-row justify-center gap-2 p-2">
                     <Draggable id="Zip" disabled={false} />
                     <Draggable id="Zap" disabled={false} />
                     <Draggable id="Zop" disabled={false} />
                 </div>
-                <DragOverlay dropAnimation={null}>
-                    {#if typeof draggedButton === 'string'}
-                        <ActionButton action={draggedButton} disabled={false} />
-                    {/if}
-                </DragOverlay>
                 <div class="flex justify-center gap-4">
                     {#each players as [pid, player]}
                         <Droppable id={pid}>
