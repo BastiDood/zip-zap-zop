@@ -150,13 +150,13 @@
         {/if}
         <DndContext onDragStart={handleDragStart} onDragEnd={handleDrop}>
             <div class="flex touch-none select-none flex-row justify-center gap-2">
-                <Draggable id="Zip" />
-                <Draggable id="Zap" />
-                <Draggable id="Zop" />
+                <Draggable id="Zip" {disabled} />
+                <Draggable id="Zap" {disabled} />
+                <Draggable id="Zop" {disabled} />
             </div>
             <DragOverlay dropAnimation={null}>
                 {#if typeof draggedButton === 'string'}
-                    <ActionButton action={draggedButton} />
+                    <ActionButton {disabled} action={draggedButton} />
                 {/if}
             </DragOverlay>
             <div class="grid grid-cols-3 gap-2 md:gap-4 lg:grid-cols-5">

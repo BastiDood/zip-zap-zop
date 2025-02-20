@@ -1,10 +1,11 @@
 <script lang="ts">
     import { cn } from '$lib/utils/cn';
 
-    const { class: externalClass = '', action } = $props();
+    const { class: externalClass = '', action, disabled } = $props();
 </script>
 
-<div
+<button
+    {disabled}
     class={cn(externalClass, 'btn btn-circle btn-lg z-10 ring-offset-neutral', {
         'btn-info': action === 'Zip',
         'btn-success': action === 'Zap',
@@ -12,4 +13,4 @@
     })}
 >
     {action}
-</div>
+</button>
