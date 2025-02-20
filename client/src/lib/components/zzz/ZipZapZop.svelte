@@ -19,8 +19,8 @@
     }
 
     const { zzz }: Props = $props();
-    let targetedPlayer: UniqueIdentifier | null = $state<UniqueIdentifier | null>(null);
-    let draggedButton: UniqueIdentifier | null = $state<UniqueIdentifier | null>(null);
+    let targetedPlayer = $state<UniqueIdentifier | null>(null);
+    let draggedButton = $state<UniqueIdentifier | null>(null);
 
     function prevPlayerAction(action: PlayerAction) {
         switch (action) {
