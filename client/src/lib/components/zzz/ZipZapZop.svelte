@@ -19,9 +19,6 @@
     }
 
     const { zzz }: Props = $props();
-
-    let mousePosition = $state({ x: 0, y: 0 });
-    let dragStartPos = $state({ x: 0, y: 0 });
     let targetedPlayer: UniqueIdentifier | null = $state<UniqueIdentifier | null>(null);
     let draggedButton: UniqueIdentifier | null = $state<UniqueIdentifier | null>(null);
 
@@ -47,26 +44,6 @@
         }
     }
 
-    function playerActionColorClasses(action: PlayerAction) {
-        switch (action) {
-            case PlayerAction.Zip:
-                return ['text-info', 'fill-info'] as const;
-            case PlayerAction.Zap:
-                return ['text-success', 'fill-success'] as const;
-            case PlayerAction.Zop:
-                return ['text-warning', 'fill-warning'] as const;
-        }
-    }
-
-    function positionLineStart(event: PointerEvent) {
-        mousePosition = { x: event.clientX, y: event.clientY };
-        const clickTarget = event.currentTarget;
-        if (clickTarget instanceof HTMLButtonElement) {
-            const btnBounds = clickTarget.getBoundingClientRect();
-            dragStartPos = {
-                x: btnBounds.left + btnBounds.width / 2,
-                y: btnBounds.top + btnBounds.height / 2,
-            };
     function handleDragStart({ active }: DragStartEvent) {
         assert(typeof active.id === 'string');
         draggedButton = active.id;
@@ -132,20 +109,6 @@
         {:else}
             <div role="alert" class="alert alert-error text-error-content shadow-sm">
                 <span><strong>{zzz.eliminated}</strong> has been eliminated.</span>
-            </div>
-        {/if}
-        {#if nextAction !== null && !disabled}
-            {@const [lineColor] = playerActionColorClasses(nextAction)}
-            <div>
-                <svg class="pointer-events-none absolute left-0 top-0 h-full w-full stroke-2 {lineColor}">
-                    <line
-                        x1={dragStartPos.x}
-                        y1={dragStartPos.y}
-                        x2={mousePosition.x}
-                        y2={mousePosition.y}
-                        stroke="currentColor"
-                    />
-                </svg>
             </div>
         {/if}
         <DndContext onDragStart={handleDragStart} onDragEnd={handleDrop}>
