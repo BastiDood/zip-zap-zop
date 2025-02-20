@@ -1,5 +1,8 @@
 <script lang="ts">
+    import { DndContext, type DragEndEvent, type DragStartEvent, type UniqueIdentifier } from '@dnd-kit-svelte/core';
     import Deadline from './Deadline.svelte';
+    import Draggable from './Draggable.svelte';
+    import Droppable from './Droppable.svelte';
     import { PlayerAction } from '$lib/models/game';
     import type { State } from '$lib/zzz/state.svelte';
 
@@ -11,8 +14,20 @@
 
     let mousePosition = $state({ x: 0, y: 0 });
     let dragStartPos = $state({ x: 0, y: 0 });
-    let nextAction: PlayerAction | null = $state(null);
-    let hoveredPlayer: number | null = $state(null);
+    let targetedPlayer: UniqueIdentifier | null = $state<UniqueIdentifier | null>(null);
+    let draggedButton: UniqueIdentifier | null = $state<UniqueIdentifier | null>(null);
+    const nextAction: PlayerAction | null = $derived.by(() => {
+        switch (draggedButton) {
+            case 'Zip':
+                return PlayerAction.Zip;
+            case 'Zap':
+                return PlayerAction.Zap;
+            case 'Zop':
+                return PlayerAction.Zop;
+            default:
+                return null;
+        }
+    });
 
     function prevPlayerAction(action: PlayerAction) {
         switch (action) {
@@ -56,15 +71,17 @@
                 x: btnBounds.left + btnBounds.width / 2,
                 y: btnBounds.top + btnBounds.height / 2,
             };
+    function handleDragStart({ active }: DragStartEvent) {
+        if (active) {
+            draggedButton = active.id as string;
         }
     }
 
-    function handleDrop(pid: number) {
-        if (nextAction !== null) {
-            zzz.respond(pid, nextAction);
+    function handleDrop({ over }: DragEndEvent) {
+        if (over && nextAction) {
+            targetedPlayer = over.id as number;
+            zzz.respond(targetedPlayer, nextAction);
         }
-        hoveredPlayer = null;
-        nextAction = null;
     }
 </script>
 
@@ -133,57 +150,20 @@
                 </svg>
             </div>
         {/if}
-        <div class="flex touch-none select-none flex-row justify-center gap-2">
-            <button
-                type="button"
-                draggable="true"
-                {disabled}
-                onpointerdown={positionLineStart}
-                ondragstart={() => (nextAction = PlayerAction.Zip)}
-                class="btn btn-circle btn-info btn-lg ring-offset-neutral {nextAction === PlayerAction.Zip
-                    ? 'ring ring-info ring-offset-4'
-                    : ''}">Zip</button
-            >
-            <button
-                type="button"
-                draggable="true"
-                {disabled}
-                onpointerdown={positionLineStart}
-                ondragstart={() => (nextAction = PlayerAction.Zap)}
-                class="btn btn-circle btn-success btn-lg ring-offset-neutral {nextAction === PlayerAction.Zap
-                    ? 'ring ring-success ring-offset-4'
-                    : ''}">Zap</button
-            >
-            <button
-                type="button"
-                draggable="true"
-                {disabled}
-                onpointerdown={positionLineStart}
-                ondragstart={() => (nextAction = PlayerAction.Zop)}
-                class="btn btn-circle btn-warning btn-lg ring-offset-neutral {nextAction === PlayerAction.Zop
-                    ? 'ring ring-warning ring-offset-4'
-                    : ''}">Zop</button
-            >
-        </div>
-        <div class="grid grid-cols-3 gap-2 md:gap-4 lg:grid-cols-5">
-            {#each zzz.players as [pid, player] (pid)}
-                <div
-                    role="gridcell"
-                    tabindex="0"
-                    class="rounded-xl border bg-base-300 px-4 py-2 text-neutral-content {pid === hoveredPlayer
-                        ? 'animate-pulse border-neutral-content'
-                        : 'border-base-300'}"
-                    ondragover={e => {
-                        e.preventDefault();
-                        hoveredPlayer = pid;
-                    }}
-                    ondragleave={() => (hoveredPlayer = null)}
-                    ondrop={() => handleDrop(pid)}
-                >
-                    <p class="w-full truncate text-center font-bold">{player}</p>
-                </div>
-            {/each}
-        </div>
+        <DndContext onDragStart={handleDragStart} onDragEnd={handleDrop}>
+            <div class="flex touch-none select-none flex-row justify-center gap-2">
+                <Draggable id="Zip" />
+                <Draggable id="Zap" />
+                <Draggable id="Zop" />
+            </div>
+            <div class="grid grid-cols-3 gap-2 md:gap-4 lg:grid-cols-5">
+                {#each zzz.players as [pid, player] (pid)}
+                    <Droppable id={pid}>
+                        <p class="w-full truncate text-center font-bold">{player}</p>
+                    </Droppable>
+                {/each}
+            </div>
+        </DndContext>
     {/if}
 {:else}
     {@const winner = zzz.players.get(zzz.winner) ?? zzz.player}
@@ -200,10 +180,3 @@
         <a href="/" class="btn btn-primary">Go Back Home</a>
     </div>
 {/if}
-
-<svelte:window
-    ondrag={e => (mousePosition = { x: e.clientX, y: e.clientY })}
-    ondragend={() => {
-        nextAction = null;
-    }}
-/>
