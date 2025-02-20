@@ -85,17 +85,17 @@
 
 <div class="flex overflow-hidden rounded-lg text-3xl shadow-xl">
     {#if zzz.lid !== null}
-        <div class="flex-none bg-primary px-4 py-2 text-primary-content">{zzz.lid}</div>
+        <div class="flex-none place-self-center bg-primary p-4 text-primary-content">{zzz.lid}</div>
     {/if}
     {#if zzz.lobby !== null}
-        <div class="flex-1 bg-neutral px-4 py-2 text-neutral-content">{zzz.lobby}</div>
+        <div class="flex-1 place-self-center bg-neutral p-4 text-neutral-content">{zzz.lobby}</div>
     {/if}
 </div>
 {#if zzz.winner === null}
     {#if zzz.expected === null}
         <div role="alert" class="alert skeleton shadow-sm">Waiting for the host to start the game...</div>
         <div class="overflow-x-auto">
-            <table class="table">
+            <table class="table overflow-y-scroll">
                 <thead>
                     <tr>
                         <th>ID</th>
@@ -149,22 +149,24 @@
             </div>
         {/if}
         <DndContext onDragStart={handleDragStart} onDragEnd={handleDrop}>
-            <div class="flex touch-none select-none flex-row justify-center gap-2">
-                <Draggable id="Zip" {disabled} />
-                <Draggable id="Zap" {disabled} />
-                <Draggable id="Zop" {disabled} />
-            </div>
-            <DragOverlay dropAnimation={null}>
-                {#if typeof draggedButton === 'string'}
-                    <ActionButton {disabled} action={draggedButton} />
-                {/if}
-            </DragOverlay>
-            <div class="grid grid-cols-3 gap-2 md:gap-4 lg:grid-cols-5">
-                {#each zzz.players as [pid, player] (pid)}
-                    <Droppable id={pid}>
-                        <p class="w-full truncate text-center font-bold">{player}</p>
-                    </Droppable>
-                {/each}
+            <div class="flex flex-col gap-4 overflow-hidden">
+                <div class="flex touch-none select-none flex-row justify-center gap-2 p-2">
+                    <Draggable id="Zip" {disabled} />
+                    <Draggable id="Zap" {disabled} />
+                    <Draggable id="Zop" {disabled} />
+                </div>
+                <DragOverlay dropAnimation={null}>
+                    {#if typeof draggedButton === 'string'}
+                        <ActionButton {disabled} action={draggedButton} />
+                    {/if}
+                </DragOverlay>
+                <div class="grid grid-cols-3 gap-2 overflow-auto md:gap-4 lg:grid-cols-5">
+                    {#each zzz.players as [pid, player] (pid)}
+                        <Droppable id={pid}>
+                            <p class="w-full truncate text-center font-bold">{player}</p>
+                        </Droppable>
+                    {/each}
+                </div>
             </div>
         </DndContext>
     {/if}
