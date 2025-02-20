@@ -1,18 +1,15 @@
 <script lang="ts">
-    const { action } = $props();
+    import { cn } from '$lib/utils/cn';
 
-    function buttonColorClasses(action: string) {
-        switch (action) {
-            case 'Zip':
-                return 'btn-info';
-            case 'Zap':
-                return 'btn-success';
-            case 'Zop':
-                return 'btn-warning';
-        }
-    }
+    const { class: externalClass = '', action } = $props();
 </script>
 
-<div class="btn btn-circle btn-lg z-10 ring-offset-neutral {buttonColorClasses(action)}">
+<div
+    class={cn(externalClass, 'btn btn-circle btn-lg z-10 ring-offset-neutral', {
+        'btn-info': action === 'Zip',
+        'btn-success': action === 'Zap',
+        'btn-warning': action === 'Zop',
+    })}
+>
     {action}
 </div>
