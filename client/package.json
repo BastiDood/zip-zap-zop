@@ -18,9 +18,13 @@
         "lint:svelte": "svelte-check --tsconfig ./tsconfig.json"
     },
     "dependencies": {
+        "@dnd-kit-svelte/core": "^0.0.8",
+        "@dnd-kit-svelte/utilities": "^0.0.8",
         "@msgpack/msgpack": "3.0.1",
         "@sveltejs/kit": "^2.17.2",
+        "clsx": "^2.1.1",
         "svelte": "^5.20.2",
+        "tailwind-merge": "^2.6.0",
         "valibot": "1.0.0-rc.1"
     },
     "devDependencies": {

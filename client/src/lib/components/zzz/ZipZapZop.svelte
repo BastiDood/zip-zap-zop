@@ -1,18 +1,26 @@
 <script lang="ts">
+    import {
+        DndContext,
+        type DragEndEvent,
+        DragOverlay,
+        type DragStartEvent,
+        type UniqueIdentifier,
+    } from '@dnd-kit-svelte/core';
+    import ActionButton from './ActionButton.svelte';
     import Deadline from './Deadline.svelte';
+    import Draggable from './Draggable.svelte';
+    import Droppable from './Droppable.svelte';
     import { PlayerAction } from '$lib/models/game';
     import type { State } from '$lib/zzz/state.svelte';
+    import { assert } from '$lib/utils/assert';
 
     interface Props {
         zzz: State;
     }
 
     const { zzz }: Props = $props();
-
-    let mousePosition = $state({ x: 0, y: 0 });
-    let dragStartPos = $state({ x: 0, y: 0 });
-    let nextAction: PlayerAction | null = $state(null);
-    let hoveredPlayer: number | null = $state(null);
+    let targetedPlayer = $state<UniqueIdentifier | null>(null);
+    let draggedButton = $state<UniqueIdentifier | null>(null);
 
     function prevPlayerAction(action: PlayerAction) {
         switch (action) {
@@ -36,51 +44,35 @@
         }
     }
 
-    function playerActionColorClasses(action: PlayerAction) {
-        switch (action) {
-            case PlayerAction.Zip:
-                return ['text-info', 'fill-info'] as const;
-            case PlayerAction.Zap:
-                return ['text-success', 'fill-success'] as const;
-            case PlayerAction.Zop:
-                return ['text-warning', 'fill-warning'] as const;
-        }
+    function handleDragStart({ active }: DragStartEvent) {
+        assert(typeof active.id === 'string');
+        draggedButton = active.id;
     }
 
-    function positionLineStart(event: PointerEvent) {
-        mousePosition = { x: event.clientX, y: event.clientY };
-        const clickTarget = event.currentTarget;
-        if (clickTarget instanceof HTMLButtonElement) {
-            const btnBounds = clickTarget.getBoundingClientRect();
-            dragStartPos = {
-                x: btnBounds.left + btnBounds.width / 2,
-                y: btnBounds.top + btnBounds.height / 2,
-            };
+    function handleDrop({ over }: DragEndEvent) {
+        if (over !== null && draggedButton !== null) {
+            assert(typeof over.id === 'number');
+            targetedPlayer = over.id;
+            zzz.respond(targetedPlayer, draggedButton as PlayerAction);
         }
-    }
-
-    function handleDrop(pid: number) {
-        if (nextAction !== null) {
-            zzz.respond(pid, nextAction);
-        }
-        hoveredPlayer = null;
-        nextAction = null;
+        targetedPlayer = null;
+        draggedButton = null;
     }
 </script>
 
 <div class="flex overflow-hidden rounded-lg text-3xl shadow-xl">
     {#if zzz.lid !== null}
-        <div class="flex-none bg-primary px-4 py-2 text-primary-content">{zzz.lid}</div>
+        <div class="flex-none place-self-center bg-primary p-4 text-primary-content">{zzz.lid}</div>
     {/if}
     {#if zzz.lobby !== null}
-        <div class="flex-1 bg-neutral px-4 py-2 text-neutral-content">{zzz.lobby}</div>
+        <div class="flex-1 place-self-center bg-neutral p-4 text-neutral-content">{zzz.lobby}</div>
     {/if}
 </div>
 {#if zzz.winner === null}
     {#if zzz.expected === null}
         <div role="alert" class="alert skeleton shadow-sm">Waiting for the host to start the game...</div>
         <div class="overflow-x-auto">
-            <table class="table">
+            <table class="table overflow-y-scroll">
                 <thead>
                     <tr>
                         <th>ID</th>
@@ -119,71 +111,27 @@
                 <span><strong>{zzz.eliminated}</strong> has been eliminated.</span>
             </div>
         {/if}
-        {#if nextAction !== null && !disabled}
-            {@const [lineColor] = playerActionColorClasses(nextAction)}
-            <div>
-                <svg class="pointer-events-none absolute left-0 top-0 h-full w-full stroke-2 {lineColor}">
-                    <line
-                        x1={dragStartPos.x}
-                        y1={dragStartPos.y}
-                        x2={mousePosition.x}
-                        y2={mousePosition.y}
-                        stroke="currentColor"
-                    />
-                </svg>
-            </div>
-        {/if}
-        <div class="flex touch-none select-none flex-row justify-center gap-2">
-            <button
-                type="button"
-                draggable="true"
-                {disabled}
-                onpointerdown={positionLineStart}
-                ondragstart={() => (nextAction = PlayerAction.Zip)}
-                class="btn btn-circle btn-info btn-lg ring-offset-neutral {nextAction === PlayerAction.Zip
-                    ? 'ring ring-info ring-offset-4'
-                    : ''}">Zip</button
-            >
-            <button
-                type="button"
-                draggable="true"
-                {disabled}
-                onpointerdown={positionLineStart}
-                ondragstart={() => (nextAction = PlayerAction.Zap)}
-                class="btn btn-circle btn-success btn-lg ring-offset-neutral {nextAction === PlayerAction.Zap
-                    ? 'ring ring-success ring-offset-4'
-                    : ''}">Zap</button
-            >
-            <button
-                type="button"
-                draggable="true"
-                {disabled}
-                onpointerdown={positionLineStart}
-                ondragstart={() => (nextAction = PlayerAction.Zop)}
-                class="btn btn-circle btn-warning btn-lg ring-offset-neutral {nextAction === PlayerAction.Zop
-                    ? 'ring ring-warning ring-offset-4'
-                    : ''}">Zop</button
-            >
-        </div>
-        <div class="grid grid-cols-3 gap-2 md:gap-4 lg:grid-cols-5">
-            {#each zzz.players as [pid, player] (pid)}
-                <div
-                    role="gridcell"
-                    tabindex="0"
-                    class="rounded-xl border bg-base-300 px-4 py-2 text-neutral-content {pid === hoveredPlayer
-                        ? 'animate-pulse border-neutral-content'
-                        : 'border-base-300'}"
-                    ondragover={e => {
-                        e.preventDefault();
-                        hoveredPlayer = pid;
-                    }}
-                    ondragleave={() => (hoveredPlayer = null)}
-                    ondrop={() => handleDrop(pid)}
-                >
-                    <p class="w-full truncate text-center font-bold">{player}</p>
+        <DndContext onDragStart={handleDragStart} onDragEnd={handleDrop}>
+            <div class="flex flex-col gap-4 overflow-hidden">
+                <div class="flex touch-none select-none flex-row justify-center gap-2 p-2">
+                    <Draggable id="Zip" {disabled} />
+                    <Draggable id="Zap" {disabled} />
+                    <Draggable id="Zop" {disabled} />
                 </div>
-            {/each}
-        </div>
+                <DragOverlay dropAnimation={null}>
+                    {#if typeof draggedButton === 'string'}
+                        <ActionButton {disabled} action={draggedButton} />
+                    {/if}
+                </DragOverlay>
+                <div class="grid grid-cols-3 gap-2 overflow-auto md:gap-4 lg:grid-cols-5">
+                    {#each zzz.players as [pid, player] (pid)}
+                        <Droppable id={pid}>
+                            <p class="w-full truncate text-center font-bold">{player}</p>
+                        </Droppable>
+                    {/each}
+                </div>
+            </div>
+        </DndContext>
     {/if}
 {:else}
     {@const winner = zzz.players.get(zzz.winner) ?? zzz.player}
@@ -200,10 +148,3 @@
         <a href="/" class="btn btn-primary">Go Back Home</a>
     </div>
 {/if}
-
-<svelte:window
-    ondrag={e => (mousePosition = { x: e.clientX, y: e.clientY })}
-    ondragend={() => {
-        nextAction = null;
-    }}
-/>

@@ -48,13 +48,15 @@
         </div>
     </form>
 {:else}
-    <main class="m-4 space-y-4">
+    <main class="flex max-h-screen flex-col space-y-4 p-4">
         <ZipZapZop {zzz} />
         {#if isPending}
             {@const disabled = zzz.lid === null || zzz.pid === null}
-            <button type="button" {disabled} onclick={startGame.bind(null, zzz)} class="btn btn-success"
-                >Start Game</button
-            >
+            <div>
+                <button type="button" {disabled} onclick={startGame.bind(null, zzz)} class="btn btn-success"
+                    >Start Game</button
+                >
+            </div>
         {/if}
     </main>
 {/if}
