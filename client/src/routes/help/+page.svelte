@@ -12,9 +12,13 @@
     ];
     let draggedButton = $state<UniqueIdentifier | null>(null);
 
-    function handleDragStart({ active }: DragStartEvent) {
+    function setDraggedButton({ active }: DragStartEvent) {
         assert(typeof active.id === 'string');
         draggedButton = active.id;
+    }
+
+    function resetDraggedButton() {
+        draggedButton = null;
     }
 </script>
 
@@ -49,11 +53,7 @@
             To play, drag your intended action (Zip, Zap, or Zop) and drop it on your targeted player. Remember to only
             act on your turn!
         </p>
-        <DndContext
-            onDragStart={handleDragStart}
-            onDragEnd={() => (draggedButton = null)}
-            onDragCancel={() => (draggedButton = null)}
-        >
+        <DndContext onDragStart={setDraggedButton} onDragEnd={resetDraggedButton} onDragCancel={resetDraggedButton}>
             <DragOverlay dropAnimation={null}>
                 {#if typeof draggedButton === 'string'}
                     <ActionButton action={draggedButton} disabled={false} />
