@@ -42,5 +42,5 @@
         </div>
     </form>
 {:else}
-    <main class="flex h-screen flex-col space-y-4 p-4"><ZipZapZop {zzz} /></main>
+    <main class="flex h-dvh flex-col space-y-4 p-4 md:h-screen"><ZipZapZop {zzz} /></main>
 {/if}
