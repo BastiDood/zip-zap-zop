@@ -111,18 +111,18 @@
                 <span><strong>{zzz.eliminated}</strong> has been eliminated.</span>
             </div>
         {/if}
-        <DndContext onDragStart={handleDragStart} onDragEnd={handleDrop}>
-            <div class="flex flex-col gap-4 overflow-hidden">
+        <DndContext onDragStart={handleDragStart} onDragEnd={handleDrop} onDragCancel={handleDrop}>
+            <DragOverlay dropAnimation={null}>
+                {#if typeof draggedButton === 'string'}
+                    <ActionButton {disabled} action={draggedButton} />
+                {/if}
+            </DragOverlay>
+            <div class="flex grow flex-col-reverse justify-between gap-4 overflow-hidden md:flex-col md:justify-normal">
                 <div class="flex touch-none select-none flex-row justify-center gap-2 p-2">
                     <Draggable id="Zip" {disabled} />
                     <Draggable id="Zap" {disabled} />
                     <Draggable id="Zop" {disabled} />
                 </div>
-                <DragOverlay dropAnimation={null}>
-                    {#if typeof draggedButton === 'string'}
-                        <ActionButton {disabled} action={draggedButton} />
-                    {/if}
-                </DragOverlay>
                 <div class="grid grid-cols-3 gap-2 overflow-auto md:gap-4 lg:grid-cols-5">
                     {#each zzz.players as [pid, player] (pid)}
                         <Droppable id={pid}>
