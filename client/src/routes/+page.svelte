@@ -4,7 +4,7 @@
 </script>
 
 <header class="absolute right-0 top-0 p-4">
-    <a href="https://github.com/BastiDood/zip-zap-zop">
+    <a href="https://github.com/BastiDood/zip-zap-zop" rel="external" target="_blank">
         <Icon icon={GitHub} width="40" />
     </a>
 </header>
