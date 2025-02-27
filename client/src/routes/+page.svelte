@@ -1,10 +1,11 @@
 <script lang="ts">
+    import GitHub from '@iconify/icons-simple-icons/github';
     import Icon from '@iconify/svelte';
 </script>
 
 <header class="absolute right-0 top-0 p-4">
     <a href="https://github.com/BastiDood/zip-zap-zop">
-        <Icon icon="mdi:github" width="48" />
+        <Icon icon={GitHub} width="40" />
     </a>
 </header>
 <div class="flex h-screen flex-col items-center justify-center">
