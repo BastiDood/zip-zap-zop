@@ -14,6 +14,9 @@ importers:
       '@dnd-kit-svelte/utilities':
         specifier: ^0.0.8
         version: 0.0.8(svelte@5.20.5)
+      '@iconify/icons-simple-icons':
+        specifier: ^1.2.74
+        version: 1.2.74
       '@iconify/svelte':
         specifier: ^4.2.0
         version: 4.2.0(svelte@5.20.5)
@@ -381,6 +384,9 @@ packages:
   '@humanwhocodes/retry@0.4.2':
     resolution: {integrity: sha512-xeO57FpIu4p1Ri3Jq/EXq4ClRm86dVF2z/+kvFnyqVYRavTZmaFaUBbWCOuuTh0o/g7DSsk6kc2vrS4Vl5oPOQ==}
     engines: {node: '>=18.18'}
+
+  '@iconify/icons-simple-icons@1.2.74':
+    resolution: {integrity: sha512-bsmbvwO8hauz49z740CYg70IDevOgshUoq4q1IKt6NnElnn+N2F6AseO3Uti82yUU4OHyQqkWjjUwoPTazlNnA==}
 
   '@iconify/svelte@4.2.0':
     resolution: {integrity: sha512-fEl0T7SAPonK7xk6xUlRPDmFDZVDe2Z7ZstlqeDS/sS8ve2uyU+Qa8rTWbIqzZJlRvONkK5kVXiUf9nIc+6OOQ==}
@@ -2563,6 +2569,10 @@ snapshots:
   '@humanwhocodes/retry@0.3.1': {}
 
   '@humanwhocodes/retry@0.4.2': {}
+
+  '@iconify/icons-simple-icons@1.2.74':
+    dependencies:
+      '@iconify/types': 2.0.0
 
   '@iconify/svelte@4.2.0(svelte@5.20.5)':
     dependencies:
